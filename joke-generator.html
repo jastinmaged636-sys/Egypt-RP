@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>مولد نكت عشوائية — Egypt RP</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:#0f0f13;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{background:#16161e;padding:24px;border-radius:12px;max-width:720px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.6);text-align:right}
+    h1{margin:0 0 12px 0;color:#ff2a2a}
+    p.lead{color:#ccc;margin:8px 0 18px}
+    .joke{background:#0f0f13;border:1px solid #333;padding:16px;border-radius:8px;min-height:64px;display:flex;align-items:center;justify-content:center;font-size:1.05rem}
+    .controls{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+    button{background:#5865F2;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:700}
+    button.secondary{background:#2ea44f}
+    .small{font-size:0.85rem;color:#aaa;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>مولد نكت عشوائية</h1>
+    <p class="lead">اضغط الزر للحصول على نكتة جديدة (يتم جلبها من JokeAPI العام).</p>
+
+    <div id="joke" class="joke">اضغط "نكتة جديدة" لبدء...</div>
+
+    <div class="controls">
+      <button id="newJokeBtn">نكتة جديدة</button>
+      <button id="copyBtn" class="secondary">نسخ</button>
+    </div>
+
+    <div class="small">ملاحظة: قد تكون النكات بالإنجليزية لأن المزود يعطي محتوى عالمي.</div>
+  </div>
+
+  <script>
+    // يستخدم JokeAPI: https://v2.jokeapi.dev/
+    const jokeEl = document.getElementById('joke');
+    const newJokeBtn = document.getElementById('newJokeBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+    async function fetchJoke() {
+      jokeEl.textContent = 'جارٍ جلب نكتة...';
+      try {
+        // نطلب نكات من النوع single أو twopart. نستبعد المحتوى الحساس.
+        const res = await fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,sexist,racist,explicit');
+        if (!res.ok) throw new Error('Network response not ok');
+        const data = await res.json();
+
+        let text = '';
+        if (data.type === 'single') {
+          text = data.joke;
+        } else if (data.type === 'twopart') {
+          text = data.setup + '\n' + data.delivery;
+        } else {
+          text = 'لم يتم العثور على نكتة. حاول مرة أخرى.';
+        }
+
+        jokeEl.textContent = text;
+      } catch (err) {
+        console.error(err);
+        jokeEl.textContent = 'حدث خطأ أثناء جلب النكتة. تحقق من اتصالك أو أعد المحاولة.';
+      }
+    }
+
+    newJokeBtn.addEventListener('click', fetchJoke);
+
+    copyBtn.addEventListener('click', async () => {
+      const text = jokeEl.textContent;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = 'تم النسخ!';
+        setTimeout(() => copyBtn.textContent = 'نسخ', 1500);
+      } catch (e) {
+        alert('فشل النسخ — حاول تحديد النص ونسخه يدوياً.');
+      }
+    });
+
+    // جلب أول نكتة تلقائياً عند التحميل
+    window.addEventListener('DOMContentLoaded', fetchJoke);
+  </script>
+</body>
+</html>
