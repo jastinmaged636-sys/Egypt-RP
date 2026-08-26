@@ -72,7 +72,7 @@
         .logo .red { color: #ff2a2a; }
         .logo .dark-red { color: #8b0000; }
 
-        /* Top User Profile Container */
+        /* User Profile in Header */
         .header-user-profile {
             display: flex;
             align-items: center;
@@ -93,6 +93,15 @@
         .header-user-name {
             font-size: 0.9rem;
             font-weight: bold;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #ff2a2a;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
         }
 
         /* Sidebar Styles */
@@ -342,7 +351,6 @@
         <div>Welcome to <span style="color:#ff2a2a;">Egypt</span> <span style="color:#8b0000;">RP</span></div>
     </div>
 
-    <!-- Header Section -->
     <header>
         <div class="header-right">
             <button class="menu-btn" onclick="toggleSidebar()">☰</button>
@@ -351,14 +359,13 @@
             </div>
         </div>
         
-        <!-- بديل الشريط: بروفيل الديسكورد للمستخدم -->
         <div id="header-user-container" class="header-user-profile hidden">
             <img id="header-avatar" class="header-user-avatar" src="" alt="Avatar">
             <span id="header-username" class="header-user-name">زائر</span>
+            <button class="logout-btn" onclick="logout()" title="تسجيل الخروج">🚪</button>
         </div>
     </header>
 
-    <!-- Sidebar Overlay & Menu -->
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <button class="close-sidebar-btn" onclick="toggleSidebar()">✕</button>
@@ -366,14 +373,12 @@
         <div class="sidebar-menu-item" onclick="openSidebarTab('account-info')">👤 معلومات حسابك</div>
         <div class="sidebar-menu-item" onclick="openSidebarTab('server-info')">ℹ️ معلومات السيرفر</div>
 
-        <!-- الأقسام الخاصة برتبة غير مفعل -->
         <div id="unactive-sidebar-items">
             <div class="sidebar-category">القائمة العامة</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('rules')">📜 القوانين والمصطلحات</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('apply')">📝 تقديم السيرفر</div>
         </div>
 
-        <!-- الأقسام الخاصة برتبة مفعل فقط -->
         <div id="active-sidebar-items" class="hidden">
             <div class="sidebar-category">أخبار وخدمات السيرفر</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('news')">📢 أخبار المدينة والتحديثات</div>
@@ -388,25 +393,21 @@
             <div class="sidebar-menu-item" onclick="openSidebarTab('organizers')">👑 التواصل مع المنظمين</div>
         </div>
 
-        <!-- قسم الإدارة للتكتات -->
         <div id="admin-tickets-btn" class="sidebar-menu-item hidden" style="border-color: #ff2a2a; margin-top:15px;" onclick="openSidebarTab('admin-tickets')">📩 إدارة التكتات والطلبات</div>
     </div>
 
     <div class="container">
         <div id="main-content" class="card">
-            <!-- سيتم تحميل المحتوى هنا -->
-        </div>
+            </div>
     </div>
 
-    <!-- Website Chat Widget (التكت والمحادثة) -->
     <div id="chat-widget" class="chat-modal hidden">
         <div class="chat-header">
             <span id="chat-title">شات التكت</span>
             <button onclick="closeChat()" style="background:none; border:none; color:#aaa; cursor:pointer;">✕</button>
         </div>
         <div class="chat-body" id="chat-messages">
-            <!-- الرسائل -->
-        </div>
+            </div>
         <div class="chat-input">
             <input type="text" id="chat-text" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendChatMessage()">
             <button class="btn" style="border-radius:0;" onclick="sendChatMessage()">إرسال</button>
@@ -453,22 +454,40 @@
             window.location.href = authUrl;
         }
 
+        function logout() {
+            localStorage.removeItem('discord_access_token');
+            window.location.href = REDIRECT_URI;
+        }
+
         function checkDiscordAuth() {
             const fragment = new URLSearchParams(window.location.hash.slice(1));
-            activeToken = fragment.get('access_token');
+            const tokenFromUrl = fragment.get('access_token');
+
+            if (tokenFromUrl) {
+                activeToken = tokenFromUrl;
+                localStorage.setItem('discord_access_token', activeToken);
+                window.location.hash = ''; // تنظيف الرابط
+            } else {
+                activeToken = localStorage.getItem('discord_access_token');
+            }
 
             if (activeToken) {
                 fetch('https://discord.com/api/users/@me', {
                     headers: { authorization: `Bearer ${activeToken}` }
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error('Token Expired');
+                    return res.json();
+                })
                 .then(userData => {
                     currentUser = userData;
 
-                    // تحديث بروفيل الهيدر
+                    // إظهار بروفيل الديسكورد في أعلى الشاشة
                     document.getElementById('header-user-container').classList.remove('hidden');
                     document.getElementById('header-username').innerText = currentUser.username;
-                    const avatarUrl = `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`;
+                    const avatarUrl = currentUser.avatar 
+                        ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
+                        : 'https://cdn.discordapp.com/embed/avatars/0.png';
                     document.getElementById('header-avatar').src = avatarUrl;
 
                     fetch(`https://discord.com/api/users/@me/guilds/${GUILD_ID}/member`, {
@@ -482,7 +501,6 @@
                         isSupportAdmin = roles.includes(SUPPORT_ROLE_ID) || roles.includes(ORGANIZER_ROLE_ID);
                         isOrganizerAdmin = roles.includes(ORGANIZER_ROLE_ID);
 
-                        // إظهار الخيارات المخصصة للمفعلين فقط
                         if(isActivated) {
                             document.getElementById('active-sidebar-items').classList.remove('hidden');
                             document.getElementById('unactive-sidebar-items').classList.add('hidden');
@@ -497,6 +515,10 @@
                     .catch(() => {
                         openSidebarTab('rules');
                     });
+                })
+                .catch(() => {
+                    localStorage.removeItem('discord_access_token');
+                    openSidebarTab('auth');
                 });
             } else {
                 openSidebarTab('auth');
@@ -611,12 +633,12 @@
                         <div class="gang-card"><div class="indicator green"></div><h3>الياكوزا</h3></div>
                     </div>`;
             } else if (tab === 'account-info') {
-                const avatarUrl = currentUser ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : '';
+                const avatarUrl = currentUser && currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
                 content.innerHTML = `
                     <h2>معلومات حسابك</h2>
                     <br>
                     <div style="display:flex; align-items:center; gap:15px; background:#0f0f13; padding:15px; border-radius:8px;">
-                        <img style="width:60px; height:60px; border-radius:50%;" src="${avatarUrl || 'https://via.placeholder.com/60'}" alt="Avatar">
+                        <img style="width:60px; height:60px; border-radius:50%;" src="${avatarUrl}" alt="Avatar">
                         <div>
                             <h3>${currentUser ? currentUser.username : 'غير مسجل'}</h3>
                             <p style="color:${isActivated ? '#2ea44f' : '#cb2431'}; font-weight:bold;">${isActivated ? '🟢 عضو مفعل' : '🔴 غير مفعل'}</p>
@@ -625,7 +647,7 @@
                 `;
             } else if (tab === 'support') {
                 renderRoleContactView('الدعم الفني');
-            } else if (section === 'organizers') {
+            } else if (tab === 'organizers') {
                 renderRoleContactView('التواصل مع المنظمين');
             } else if (tab === 'server-info') {
                 content.innerHTML = `
@@ -646,19 +668,19 @@
         function renderRoleContactView(title) {
             const content = document.getElementById('main-content');
             content.innerHTML = `
-                <h2>${title}</h2>
+                <h2>تكت ${title}</h2>
                 <br>
                 <p>الحالة: <strong style="color:#2ea44f;">متاح أونلاين 🟢</strong></p>
                 <br>
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="btn btn-green" onclick="openWebsiteChat('${title}')">✉️ فتح تكت في الموقع</button>
+                    <button class="btn btn-green" onclick="openWebsiteChat('${title}')">✉️ فتح تكت بالموقع</button>
                 </div>
             `;
         }
 
         function openWebsiteChat(type) {
             activeTicketType = type;
-            currentTicketUser = currentUser.username;
+            currentTicketUser = currentUser ? currentUser.username : 'زائر';
             document.getElementById('chat-title').innerText = `تكت ${type}`;
             document.getElementById('chat-widget').classList.remove('hidden');
             renderChatMessages();
@@ -709,7 +731,6 @@
                 const isSelf = m.sender === currentUser.username;
                 wrapper.className = `chat-msg-wrapper ${isSelf ? 'self' : 'other'}`;
                 
-                // إظهار يوزر الديسكورد للشخص المرسل (سواء كان العضو أو الإداري اللي بيرد)
                 wrapper.innerHTML = `<div class="chat-sender-name">${m.sender}</div><div class="chat-msg">${m.text}</div>`;
                 chatBody.appendChild(wrapper);
             });
@@ -721,11 +742,17 @@
             const content = document.getElementById('main-content');
             content.innerHTML = `<h2>لوحة إدارة التكتات والطلبات 📩</h2><br>`;
 
+            // تصفية التكتات المتاحة حسب صلاحيات الرتبة
             let filteredTickets = ticketsData;
 
-            // حصر رؤية التكتات بناءً على أيدي الرتبة
-            if (isSupportAdmin && !isOrganizerAdmin) {
+            if (isOrganizerAdmin) {
+                // المنظمين يرون جميع التكتات (الدعم الفني والمنظمين)
+                filteredTickets = ticketsData;
+            } else if (isSupportAdmin) {
+                // الدعم الفني يرى تكتات الدعم الفني فقط ولا يرى تكتات المنظمين
                 filteredTickets = ticketsData.filter(t => t.type === 'الدعم الفني');
+            } else {
+                filteredTickets = [];
             }
 
             if (filteredTickets.length === 0) {
@@ -756,4 +783,3 @@
     </script>
 </body>
 </html>
-
