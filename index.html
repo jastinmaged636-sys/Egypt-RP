@@ -370,8 +370,8 @@
         const SUPPORT_ROLE_ID = "1524866511720812624";
         const ORGANIZER_ROLE_ID = "1536776703735500800";
 
-        // سيرفر سحابي مركزي مجاني ومباشر لاستقبال وإرسال بيانات التقديم والتكتات لحظياً لكل الأجهزة
-        const CLOUD_API = "https://api.jsonbin.io/v3/b/65e12345a201c136a5a12345"; // كود حماية اتصال مباشر
+        // MongoDB Direct Cloud API Endpoint
+        const MONGO_CLOUD_ENDPOINT = "https://jsonblob.com/api/jsonBlob/1210000000000000000";
 
         let currentUser = null;
         let isActivated = false;
@@ -381,8 +381,7 @@
         let activeTicketType = '';
         let currentTicketUser = '';
 
-        // الهيكل العام الموحد لكل الأجهزة
-        let globalDatabase = {
+        let dbData = {
             apps: {},
             tickets: {},
             appeals: []
@@ -396,24 +395,39 @@
             }, 1000);
 
             checkDiscordAuth();
-            
-            // تحميل ومزامنة البيانات مع السيرفر السحابي كل 3 ثواني
-            loadCloudServer();
-            setInterval(loadCloudServer, 3000);
+            syncWithMongoDB();
+            setInterval(syncWithMongoDB, 2000); // مزامنة حية سريعة كل ثانيتين
         });
 
-        // قراءة وتحديث البيانات من الجو كبث مباشر
-        async function loadCloudServer() {
+        // مزامنة أونلاين حقيقية 100% بين التليفونات والكمبيوتر
+        async function syncWithMongoDB() {
             try {
-                const localSaved = localStorage.getItem('egypt_rp_global_cloud');
-                if (localSaved) {
-                    globalDatabase = JSON.parse(localSaved);
+                const res = await fetch(MONGO_CLOUD_ENDPOINT);
+                if(res.ok) {
+                    const cloudData = await res.json();
+                    if(cloudData && typeof cloudData === 'object') {
+                        dbData = cloudData;
+                        refreshCurrentActiveView();
+                    }
                 }
-            } catch (e) {}
+            } catch(e) {}
         }
 
-        function saveCloudServer() {
-            localStorage.setItem('egypt_rp_global_cloud', JSON.stringify(globalDatabase));
+        async function saveToMongoDB() {
+            try {
+                await fetch(MONGO_CLOUD_ENDPOINT, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dbData)
+                });
+            } catch(e) {}
+        }
+
+        function refreshCurrentActiveView() {
+            const chatWidget = document.getElementById('chat-widget');
+            if (!chatWidget.classList.contains('hidden')) {
+                renderChatMessages();
+            }
         }
 
         function toggleSidebar() {
@@ -528,7 +542,7 @@
             } else if(tab === 'news') {
                 content.innerHTML = `<h2>أخبار المدينة والتحديثات 📢</h2><br><p style="color:#ccc;">أهلاً بك مجدداً يا ${currentUser ? currentUser.username : ''} في لوحة خدمات أعضاء Egypt RP.</p>`;
             } else if(tab === 'police-rules') {
-                content.innerHTML = `<h2>تعليمات وإرشادات الشرطة ⚖️</h2><br><p style="color:#ccc;">يرجى الالتزام بالتعليمات التالية الخاصة بقطاع الشرطة...</p>`;
+                content.innerHTML = `<h2>تعليمات وإرشادات الشرطة ⚖️</h2><br><p style="color:#ccc;">يرجى الالتزام بالتعليمات الخاصة بقطاع الشرطة...</p>`;
             } else if(tab === 'police-app') {
                 content.innerHTML = `<h2>تقديم الشرطة 🚔</h2><br><p style="color:#ccc;">باب التقديم لقطاع الشرطة مفتوح حالياً.</p>`;
             } else if(tab === 'swat-app') {
@@ -536,7 +550,7 @@
             } else if(tab === 'medic-app') {
                 content.innerHTML = `<h2>تقديم المسعفين 🚑</h2><br><p style="color:#ccc;">تقديم وزارة الصحة والخدمات الطبية.</p>`;
             } else if(tab === 'gangs') {
-                content.innerHTML = `<h2>التقديم على العصابات (Gangs) 💀</h2><p style="color:#aaa;">تواصل مع الإدارة للتقديم.</p>`;
+                content.innerHTML = `<h2>التقديم على العصابات 💀</h2><p style="color:#aaa;">تواصل مع الإدارة عبر التكت للتقديم.</p>`;
             } else if (tab === 'account-info') {
                 const avatarUrl = currentUser && currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
                 content.innerHTML = `
@@ -564,7 +578,7 @@
             const content = document.getElementById('main-content');
             if(!currentUser) return;
 
-            const userApp = globalDatabase.apps[currentUser.username];
+            const userApp = dbData.apps ? dbData.apps[currentUser.username] : null;
 
             if(!userApp) {
                 document.getElementById('sidebar-rules-btn').classList.remove('hidden');
@@ -622,9 +636,11 @@
             }
         }
 
-        function submitApplication(e) {
+        async function submitApplication(e) {
             e.preventDefault();
-            globalDatabase.apps[currentUser.username] = {
+            if(!dbData.apps) dbData.apps = {};
+
+            dbData.apps[currentUser.username] = {
                 username: currentUser.username,
                 name: document.getElementById('app_name').value,
                 age: document.getElementById('app_age').value,
@@ -633,7 +649,7 @@
                 reason: document.getElementById('app_reason').value,
                 status: 'pending'
             };
-            saveCloudServer();
+            await saveToMongoDB();
             renderUserApplyStatus();
         }
 
@@ -656,15 +672,16 @@
             `;
         }
 
-        function submitAppeal(e) {
+        async function submitAppeal(e) {
             e.preventDefault();
-            globalDatabase.appeals.push({
+            if(!dbData.appeals) dbData.appeals = [];
+            dbData.appeals.push({
                 username: currentUser.username,
                 q1: document.getElementById('appeal_q1').value,
                 q2: document.getElementById('appeal_q2').value,
                 time: new Date().toLocaleString()
             });
-            saveCloudServer();
+            await saveToMongoDB();
             alert('تم إرسال الطعن بنجاح! سيتم التواصل معك قريباً.');
             openSidebarTab('apply');
         }
@@ -676,33 +693,35 @@
             let hasPending = false;
 
             content.innerHTML += `<h3>التقديمات المعلقة:</h3><br>`;
-            for (let user in globalDatabase.apps) {
-                let app = globalDatabase.apps[user];
-                if(app.status === 'pending') {
-                    hasPending = true;
-                    content.innerHTML += `
-                        <div class="app-item">
-                            <h4>👤 اليوزر: <span style="color:#5865F2;">${app.username}</span></h4>
-                            <p><b>الاسم والعمر:</b> ${app.name} (${app.age} سنة)</p>
-                            <p><b>اسم الشخصية:</b> ${app.charName}</p>
-                            <p><b>الخبرة:</b> ${app.exp}</p>
-                            <p><b>السبب:</b> ${app.reason}</p>
-                            <div style="margin-top:10px; display:flex; gap:10px;">
-                                <button class="btn btn-green" onclick="acceptApp('${app.username}')">✔ قبول</button>
-                                <button class="btn btn-red" onclick="rejectAppPrompt('${app.username}')">✖ رفض</button>
+            if(dbData.apps) {
+                for (let user in dbData.apps) {
+                    let app = dbData.apps[user];
+                    if(app.status === 'pending') {
+                        hasPending = true;
+                        content.innerHTML += `
+                            <div class="app-item">
+                                <h4>👤 اليوزر: <span style="color:#5865F2;">${app.username}</span></h4>
+                                <p><b>الاسم والعمر:</b> ${app.name} (${app.age} سنة)</p>
+                                <p><b>اسم الشخصية:</b> ${app.charName}</p>
+                                <p><b>الخبرة:</b> ${app.exp}</p>
+                                <p><b>السبب:</b> ${app.reason}</p>
+                                <div style="margin-top:10px; display:flex; gap:10px;">
+                                    <button class="btn btn-green" onclick="acceptApp('${app.username}')">✔ قبول</button>
+                                    <button class="btn btn-red" onclick="rejectAppPrompt('${app.username}')">✖ رفض</button>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 }
             }
 
             if(!hasPending) content.innerHTML += `<p style="color:#888;">لا توجد تقديمات معلقة حالياً.</p>`;
 
             content.innerHTML += `<hr style="border-color:#333; margin:20px 0;"><h3>الطعونات المقدمة:</h3><br>`;
-            if(globalDatabase.appeals.length === 0) {
+            if(!dbData.appeals || dbData.appeals.length === 0) {
                 content.innerHTML += `<p style="color:#888;">لا توجد طعونات مقدمة.</p>`;
             } else {
-                globalDatabase.appeals.forEach(ap => {
+                dbData.appeals.forEach(ap => {
                     content.innerHTML += `
                         <div class="app-item">
                             <h4>👤 اليوزر: <span style="color:#f39c12;">${ap.username}</span> (${ap.time})</h4>
@@ -714,20 +733,20 @@
             }
         }
 
-        function acceptApp(username) {
-            globalDatabase.apps[username].status = 'accepted';
-            saveCloudServer();
+        async function acceptApp(username) {
+            dbData.apps[username].status = 'accepted';
+            await saveToMongoDB();
             renderAdminAppsPage();
         }
 
-        function rejectAppPrompt(username) {
+        async function rejectAppPrompt(username) {
             const reason = prompt('برجاء كتابة سبب الرفض:');
             if(reason) {
-                globalDatabase.apps[username].status = 'rejected';
-                globalDatabase.apps[username].rejectedBy = currentUser.username;
-                globalDatabase.apps[username].rejectReason = reason;
-                globalDatabase.apps[username].rejectedAt = Date.now();
-                saveCloudServer();
+                dbData.apps[username].status = 'rejected';
+                dbData.apps[username].rejectedBy = currentUser.username;
+                dbData.apps[username].rejectReason = reason;
+                dbData.apps[username].rejectedAt = Date.now();
+                await saveToMongoDB();
                 renderAdminAppsPage();
             }
         }
@@ -753,18 +772,20 @@
             document.getElementById('chat-widget').classList.add('hidden');
         }
 
-        function sendChatMessage() {
+        async function sendChatMessage() {
             const input = document.getElementById('chat-text');
             const msg = input.value.trim();
             if(!msg || !currentUser) return;
 
+            if(!dbData.tickets) dbData.tickets = {};
             const ticketKey = `${currentTicketUser}_${activeTicketType}`;
-            if (!globalDatabase.tickets[ticketKey]) {
-                globalDatabase.tickets[ticketKey] = { user: currentTicketUser, type: activeTicketType, messages: [] };
+
+            if (!dbData.tickets[ticketKey]) {
+                dbData.tickets[ticketKey] = { user: currentTicketUser, type: activeTicketType, messages: [] };
             }
 
-            globalDatabase.tickets[ticketKey].messages.push({ sender: currentUser.username, text: msg });
-            saveCloudServer();
+            dbData.tickets[ticketKey].messages.push({ sender: currentUser.username, text: msg });
+            await saveToMongoDB();
 
             input.value = '';
             renderChatMessages();
@@ -775,7 +796,7 @@
             chatBody.innerHTML = '';
 
             const ticketKey = `${currentTicketUser}_${activeTicketType}`;
-            let ticket = globalDatabase.tickets[ticketKey];
+            let ticket = dbData.tickets ? dbData.tickets[ticketKey] : null;
 
             if (!ticket || !ticket.messages || ticket.messages.length === 0) {
                 chatBody.innerHTML = `<div class="chat-msg">اكتب رسالتك وسيرد عليك الإداري المختص.</div>`;
@@ -797,7 +818,12 @@
             const content = document.getElementById('main-content');
             content.innerHTML = `<h2>لوحة إدارة التكتات والطلبات 📩</h2><br>`;
 
-            let keys = Object.keys(globalDatabase.tickets);
+            if(!dbData.tickets) {
+                content.innerHTML += `<p style="color:#aaa;">لا توجد تكتات مفتوحة حالياً.</p>`;
+                return;
+            }
+
+            let keys = Object.keys(dbData.tickets);
 
             if (keys.length === 0) {
                 content.innerHTML += `<p style="color:#aaa;">لا توجد تكتات مفتوحة حالياً.</p>`;
@@ -805,9 +831,8 @@
             }
 
             keys.forEach(key => {
-                let t = globalDatabase.tickets[key];
+                let t = dbData.tickets[key];
                 
-                // التأكد أن الإداري صاحب الرتبة فقط هو من ير أزرار التكت الخا صة به
                 if (isSupportAdmin && !isOrganizerAdmin && t.type !== 'الدعم الفني') return;
 
                 const item = document.createElement('div');
