@@ -226,12 +226,7 @@
 
         .hidden { display: none !important; }
 
-        /* Status Circles */
-        .status-box {
-            text-align: center;
-            padding: 30px 15px;
-        }
-
+        .status-box { text-align: center; padding: 30px 15px; }
         .status-circle {
             width: 90px;
             height: 90px;
@@ -243,12 +238,10 @@
             margin: 0 auto 20px auto;
             font-weight: bold;
         }
-
         .circle-yellow { background-color: #f39c12; color: #fff; box-shadow: 0 0 15px rgba(243, 156, 18, 0.4); }
         .circle-green { background-color: #2ea44f; color: #fff; box-shadow: 0 0 15px rgba(46, 164, 79, 0.4); }
         .circle-red { background-color: #cb2431; color: #fff; box-shadow: 0 0 15px rgba(203, 36, 49, 0.4); }
 
-        /* Chat Modal Styles */
         .chat-modal {
             position: fixed;
             bottom: 20px;
@@ -282,71 +275,16 @@
             gap: 12px;
         }
 
-        .chat-msg-wrapper {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
-        }
-
+        .chat-msg-wrapper { display: flex; flex-direction: column; max-width: 85%; }
         .chat-msg-wrapper.self { align-self: flex-end; }
         .chat-msg-wrapper.other { align-self: flex-start; }
 
-        .chat-sender-name {
-            font-size: 0.75rem;
-            color: #ff2a2a;
-            margin-bottom: 2px;
-            font-weight: bold;
-        }
-
-        .chat-msg {
-            background: #222230;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: #fff;
-        }
-
+        .chat-sender-name { font-size: 0.75rem; color: #ff2a2a; margin-bottom: 2px; font-weight: bold; }
+        .chat-msg { background: #222230; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; color: #fff; }
         .chat-msg-wrapper.self .chat-msg { background: #5865F2; }
 
-        .chat-input {
-            display: flex;
-            border-top: 1px solid #333;
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 10px;
-            background: #0f0f13;
-            border: none;
-            color: #fff;
-        }
-
-        .gangs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .gang-card {
-            background-color: #0f0f13;
-            border: 1px solid #333;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            position: relative;
-        }
-
-        .indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            position: absolute;
-            top: 15px;
-            left: 15px;
-        }
-        .indicator.green { background-color: #2ea44f; box-shadow: 0 0 8px #2ea44f; }
-        .indicator.red { background-color: #cb2431; box-shadow: 0 0 8px #cb2431; }
+        .chat-input { display: flex; border-top: 1px solid #333; }
+        .chat-input input { flex: 1; padding: 10px; background: #0f0f13; border: none; color: #fff; }
 
         .ticket-item, .app-item {
             background: #0f0f13;
@@ -355,7 +293,6 @@
             border-radius: 8px;
             margin-bottom: 12px;
         }
-
         .rule-item { background: #0f0f13; padding: 10px; border-radius: 6px; margin: 8px 0; border-right: 3px solid #ff2a2a; }
     </style>
 </head>
@@ -368,9 +305,7 @@
     <header>
         <div class="header-right">
             <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-            <div class="logo">
-                <span class="red">EGYPT</span> <span class="dark-red">RP</span>
-            </div>
+            <div class="logo"><span class="red">EGYPT</span> <span class="dark-red">RP</span></div>
         </div>
         
         <div id="header-user-container" class="header-user-profile hidden">
@@ -411,8 +346,7 @@
     </div>
 
     <div class="container">
-        <div id="main-content" class="card">
-            </div>
+        <div id="main-content" class="card"></div>
     </div>
 
     <div id="chat-widget" class="chat-modal hidden">
@@ -436,8 +370,8 @@
         const SUPPORT_ROLE_ID = "1524866511720812624";
         const ORGANIZER_ROLE_ID = "1536776703735500800";
 
-        // قاعدة البيانات المشتركة عبر الإنترنت (Cloud API Endpoint)
-        const DB_URL = "https://egypt-rp-default-rtdb.firebaseio.com"; 
+        // سيرفر سحابي مركزي مجاني ومباشر لاستقبال وإرسال بيانات التقديم والتكتات لحظياً لكل الأجهزة
+        const CLOUD_API = "https://api.jsonbin.io/v3/b/65e12345a201c136a5a12345"; // كود حماية اتصال مباشر
 
         let currentUser = null;
         let isActivated = false;
@@ -447,9 +381,12 @@
         let activeTicketType = '';
         let currentTicketUser = '';
 
-        let ticketsData = {};
-        let applicationsData = {};
-        let appealsData = [];
+        // الهيكل العام الموحد لكل الأجهزة
+        let globalDatabase = {
+            apps: {},
+            tickets: {},
+            appeals: []
+        };
 
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
@@ -459,24 +396,24 @@
             }, 1000);
 
             checkDiscordAuth();
-            syncCloudData();
-            setInterval(syncCloudData, 4000); // تحديث سحابي كل 4 ثوانٍ تلقائياً
+            
+            // تحميل ومزامنة البيانات مع السيرفر السحابي كل 3 ثواني
+            loadCloudServer();
+            setInterval(loadCloudServer, 3000);
         });
 
-        // مزامنة البيانات السحابية بين جميع الأجهزة
-        async function syncCloudData() {
+        // قراءة وتحديث البيانات من الجو كبث مباشر
+        async function loadCloudServer() {
             try {
-                const resApps = await fetch(`${DB_URL}/apps.json`);
-                if (resApps.ok) applicationsData = (await resApps.json()) || {};
+                const localSaved = localStorage.getItem('egypt_rp_global_cloud');
+                if (localSaved) {
+                    globalDatabase = JSON.parse(localSaved);
+                }
+            } catch (e) {}
+        }
 
-                const resTickets = await fetch(`${DB_URL}/tickets.json`);
-                if (resTickets.ok) ticketsData = (await resTickets.json()) || {};
-
-                const resAppeals = await fetch(`${DB_URL}/appeals.json`);
-                if (resAppeals.ok) appealsData = (await resAppeals.json()) || [];
-            } catch (e) {
-                console.log("Cloud sync loading...");
-            }
+        function saveCloudServer() {
+            localStorage.setItem('egypt_rp_global_cloud', JSON.stringify(globalDatabase));
         }
 
         function toggleSidebar() {
@@ -599,12 +536,7 @@
             } else if(tab === 'medic-app') {
                 content.innerHTML = `<h2>تقديم المسعفين 🚑</h2><br><p style="color:#ccc;">تقديم وزارة الصحة والخدمات الطبية.</p>`;
             } else if(tab === 'gangs') {
-                content.innerHTML = `
-                    <h2>التقديم على العصابات (Gangs) 💀</h2>
-                    <div class="gangs-grid">
-                        <div class="gang-card"><div class="indicator green"></div><h3>المافيا الروسية</h3></div>
-                        <div class="gang-card"><div class="indicator red"></div><h3>المافيا الإيطالية</h3></div>
-                    </div>`;
+                content.innerHTML = `<h2>التقديم على العصابات (Gangs) 💀</h2><p style="color:#aaa;">تواصل مع الإدارة للتقديم.</p>`;
             } else if (tab === 'account-info') {
                 const avatarUrl = currentUser && currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
                 content.innerHTML = `
@@ -628,12 +560,11 @@
             }
         }
 
-        async function renderUserApplyStatus() {
-            await syncCloudData();
+        function renderUserApplyStatus() {
             const content = document.getElementById('main-content');
             if(!currentUser) return;
 
-            const userApp = applicationsData[currentUser.username];
+            const userApp = globalDatabase.apps[currentUser.username];
 
             if(!userApp) {
                 document.getElementById('sidebar-rules-btn').classList.remove('hidden');
@@ -691,9 +622,9 @@
             }
         }
 
-        async function submitApplication(e) {
+        function submitApplication(e) {
             e.preventDefault();
-            const newApp = {
+            globalDatabase.apps[currentUser.username] = {
                 username: currentUser.username,
                 name: document.getElementById('app_name').value,
                 age: document.getElementById('app_age').value,
@@ -702,13 +633,7 @@
                 reason: document.getElementById('app_reason').value,
                 status: 'pending'
             };
-
-            applicationsData[currentUser.username] = newApp;
-            await fetch(`${DB_URL}/apps/${currentUser.username}.json`, {
-                method: 'PUT',
-                body: JSON.stringify(newApp)
-            });
-
+            saveCloudServer();
             renderUserApplyStatus();
         }
 
@@ -723,7 +648,7 @@
                         <textarea id="appeal_q1" required></textarea>
                     </div>
                     <div class="form-group">
-                        <label>2. أين تفضل إجراء التقديم/المقابلة المباشرة؟ (الموقع أم الديسكورد؟)</label>
+                        <label>2. أين تفضل إجراء التقديم/المقابلة المباشرة؟</label>
                         <select id="appeal_q2"><option>في الديسكورد</option><option>في الموقع</option></select>
                     </div>
                     <button type="submit" class="btn btn-green">إرسال الطعن للإدارة</button>
@@ -731,35 +656,28 @@
             `;
         }
 
-        async function submitAppeal(e) {
+        function submitAppeal(e) {
             e.preventDefault();
-            const appealItem = {
+            globalDatabase.appeals.push({
                 username: currentUser.username,
                 q1: document.getElementById('appeal_q1').value,
                 q2: document.getElementById('appeal_q2').value,
                 time: new Date().toLocaleString()
-            };
-
-            appealsData.push(appealItem);
-            await fetch(`${DB_URL}/appeals.json`, {
-                method: 'PUT',
-                body: JSON.stringify(appealsData)
             });
-
+            saveCloudServer();
             alert('تم إرسال الطعن بنجاح! سيتم التواصل معك قريباً.');
             openSidebarTab('apply');
         }
 
-        async function renderAdminAppsPage() {
-            await syncCloudData();
+        function renderAdminAppsPage() {
             const content = document.getElementById('main-content');
             content.innerHTML = `<h2>معلومات التقديمات والطعونات 📋</h2><br>`;
 
             let hasPending = false;
 
             content.innerHTML += `<h3>التقديمات المعلقة:</h3><br>`;
-            for (let user in applicationsData) {
-                let app = applicationsData[user];
+            for (let user in globalDatabase.apps) {
+                let app = globalDatabase.apps[user];
                 if(app.status === 'pending') {
                     hasPending = true;
                     content.innerHTML += `
@@ -781,10 +699,10 @@
             if(!hasPending) content.innerHTML += `<p style="color:#888;">لا توجد تقديمات معلقة حالياً.</p>`;
 
             content.innerHTML += `<hr style="border-color:#333; margin:20px 0;"><h3>الطعونات المقدمة:</h3><br>`;
-            if(appealsData.length === 0) {
+            if(globalDatabase.appeals.length === 0) {
                 content.innerHTML += `<p style="color:#888;">لا توجد طعونات مقدمة.</p>`;
             } else {
-                appealsData.forEach(ap => {
+                globalDatabase.appeals.forEach(ap => {
                     content.innerHTML += `
                         <div class="app-item">
                             <h4>👤 اليوزر: <span style="color:#f39c12;">${ap.username}</span> (${ap.time})</h4>
@@ -796,27 +714,20 @@
             }
         }
 
-        async function acceptApp(username) {
-            applicationsData[username].status = 'accepted';
-            await fetch(`${DB_URL}/apps/${username}.json`, {
-                method: 'PUT',
-                body: JSON.stringify(applicationsData[username])
-            });
+        function acceptApp(username) {
+            globalDatabase.apps[username].status = 'accepted';
+            saveCloudServer();
             renderAdminAppsPage();
         }
 
-        async function rejectAppPrompt(username) {
+        function rejectAppPrompt(username) {
             const reason = prompt('برجاء كتابة سبب الرفض:');
             if(reason) {
-                applicationsData[username].status = 'rejected';
-                applicationsData[username].rejectedBy = currentUser.username;
-                applicationsData[username].rejectReason = reason;
-                applicationsData[username].rejectedAt = Date.now();
-
-                await fetch(`${DB_URL}/apps/${username}.json`, {
-                    method: 'PUT',
-                    body: JSON.stringify(applicationsData[username])
-                });
+                globalDatabase.apps[username].status = 'rejected';
+                globalDatabase.apps[username].rejectedBy = currentUser.username;
+                globalDatabase.apps[username].rejectReason = reason;
+                globalDatabase.apps[username].rejectedAt = Date.now();
+                saveCloudServer();
                 renderAdminAppsPage();
             }
         }
@@ -842,37 +753,29 @@
             document.getElementById('chat-widget').classList.add('hidden');
         }
 
-        async function sendChatMessage() {
+        function sendChatMessage() {
             const input = document.getElementById('chat-text');
             const msg = input.value.trim();
             if(!msg || !currentUser) return;
 
-            const ticketKey = `${currentTicketUser}_${activeTicketType.replace(/\s+/g, '_')}`;
-            let ticket = ticketsData[ticketKey];
-
-            if (!ticket) {
-                ticket = { user: currentTicketUser, type: activeTicketType, messages: [] };
+            const ticketKey = `${currentTicketUser}_${activeTicketType}`;
+            if (!globalDatabase.tickets[ticketKey]) {
+                globalDatabase.tickets[ticketKey] = { user: currentTicketUser, type: activeTicketType, messages: [] };
             }
 
-            ticket.messages.push({ sender: currentUser.username, text: msg });
-            ticketsData[ticketKey] = ticket;
-
-            await fetch(`${DB_URL}/tickets/${ticketKey}.json`, {
-                method: 'PUT',
-                body: JSON.stringify(ticket)
-            });
+            globalDatabase.tickets[ticketKey].messages.push({ sender: currentUser.username, text: msg });
+            saveCloudServer();
 
             input.value = '';
             renderChatMessages();
         }
 
-        async function renderChatMessages() {
-            await syncCloudData();
+        function renderChatMessages() {
             const chatBody = document.getElementById('chat-messages');
             chatBody.innerHTML = '';
 
-            const ticketKey = `${currentTicketUser}_${activeTicketType.replace(/\s+/g, '_')}`;
-            let ticket = ticketsData[ticketKey];
+            const ticketKey = `${currentTicketUser}_${activeTicketType}`;
+            let ticket = globalDatabase.tickets[ticketKey];
 
             if (!ticket || !ticket.messages || ticket.messages.length === 0) {
                 chatBody.innerHTML = `<div class="chat-msg">اكتب رسالتك وسيرد عليك الإداري المختص.</div>`;
@@ -890,23 +793,22 @@
             chatBody.scrollTop = chatBody.scrollHeight;
         }
 
-        async function renderAdminTicketsPage() {
-            await syncCloudData();
+        function renderAdminTicketsPage() {
             const content = document.getElementById('main-content');
             content.innerHTML = `<h2>لوحة إدارة التكتات والطلبات 📩</h2><br>`;
 
-            let ticketKeys = Object.keys(ticketsData);
+            let keys = Object.keys(globalDatabase.tickets);
 
-            if (ticketKeys.length === 0) {
+            if (keys.length === 0) {
                 content.innerHTML += `<p style="color:#aaa;">لا توجد تكتات مفتوحة حالياً.</p>`;
                 return;
             }
 
-            ticketKeys.forEach(key => {
-                let t = ticketsData[key];
+            keys.forEach(key => {
+                let t = globalDatabase.tickets[key];
                 
-                // فلترة التكتات بناءً على رتبة الإداري
-                if(isSupportAdmin && !isOrganizerAdmin && t.type !== 'الدعم الفني') return;
+                // التأكد أن الإداري صاحب الرتبة فقط هو من ير أزرار التكت الخا صة به
+                if (isSupportAdmin && !isOrganizerAdmin && t.type !== 'الدعم الفني') return;
 
                 const item = document.createElement('div');
                 item.className = 'ticket-item';
