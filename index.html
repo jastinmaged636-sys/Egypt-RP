@@ -432,6 +432,7 @@
         const ACTIVE_ROLE_ID = "1531661917490249760";
         const SUPPORT_ROLE_ID = "1524866511720812624";
         const ORGANIZER_ROLE_ID = "1536776703735500800";
+        const POLICE_ROLE_ID = "1531819412208877568"; // رتبة الشرطة
 
         // روابط الديسكورد والشركاء
         const DISCORD_INVITE_LINK = "https://discord.gg/euh5KxNaTk";
@@ -445,6 +446,7 @@
         let isActivated = false;
         let isSupportAdmin = false;
         let isOrganizerAdmin = false;
+        let isPolice = false; // حالة رتبة الشرطة
         let activeToken = null;
         let activeTicketType = '';
         let currentTicketUser = '';
@@ -574,6 +576,7 @@
                         isActivated = roles.includes(ACTIVE_ROLE_ID);
                         isSupportAdmin = roles.includes(SUPPORT_ROLE_ID);
                         isOrganizerAdmin = roles.includes(ORGANIZER_ROLE_ID);
+                        isPolice = roles.includes(POLICE_ROLE_ID);
 
                         if(isActivated) {
                             document.getElementById('active-sidebar-items').classList.remove('hidden');
@@ -658,6 +661,7 @@
                         <div>
                             <h3>${currentUser ? currentUser.username : 'غير مسجل'}</h3>
                             <p style="color:${isActivated ? '#2ea44f' : '#cb2431'}; font-weight:bold;">${isActivated ? '🟢 عضو مفعل' : '🔴 غير مفعل'}</p>
+                            ${isPolice ? '<p style="color:#3498db; font-weight:bold; font-size:0.85rem; margin-top:3px;">👮 ضابط شرطة</p>' : ''}
                         </div>
                     </div>
                 `;
@@ -677,7 +681,7 @@
             const content = document.getElementById('main-content');
             content.innerHTML = `
                 <h2 style="text-align:center;">📻 جهاز الراديو اللاسلكي (Radio System)</h2>
-                <p style="text-align:center; color:#aaa; margin-bottom:20px;">ميزة خاصة بالأعضاء المفعلين للتواصل الصوتي المباشر عبر الترددات</p>
+                <p style="text-align:center; color:#aaa; margin-bottom:20px;">ميزة خاصة بالأعضاء المفعلين للتواصل الصوتي المباشر عبر الترددات (الترددات 1-4 مخصصة للشرطة فقط)</p>
                 
                 <div class="radio-box">
                     <div class="radio-screen">
@@ -706,8 +710,18 @@
         }
 
         async function joinFrequency() {
-            const freq = document.getElementById('freq-input').value.trim();
-            if(!freq) return alert('برجاء إدخال رقم التردد أولاً');
+            const freqVal = document.getElementById('freq-input').value.trim();
+            if(!freqVal) return alert('برجاء إدخال رقم التردد أولاً');
+
+            const freqNum = parseFloat(freqVal);
+
+            // التحقق من صلاحيات الترددات الخاصة بالشرطة (من 1 إلى 4)
+            if (freqNum >= 1 && freqNum <= 4) {
+                if (!isPolice) {
+                    alert('⚠️ الترددات من 1 إلى 4 مخصصة فقط لأفراد الشرطة!');
+                    return;
+                }
+            }
 
             try {
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -720,11 +734,11 @@
                 delete dbData.radioFreqs[currentFrequency][currentUser.username];
             }
 
-            currentFrequency = freq;
+            currentFrequency = freqVal;
             if(!dbData.radioFreqs) dbData.radioFreqs = {};
-            if(!dbData.radioFreqs[freq]) dbData.radioFreqs[freq] = {};
+            if(!dbData.radioFreqs[freqVal]) dbData.radioFreqs[freqVal] = {};
 
-            dbData.radioFreqs[freq][currentUser.username] = true;
+            dbData.radioFreqs[freqVal][currentUser.username] = true;
             await saveToMongoDB();
 
             updateRadioUI();
