@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power City RP</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #080c14;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #04060a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 2.2rem;
+            font-weight: bold;
+            direction: ltr;
+            transition: opacity 0.5s ease;
+        }
+
+        header {
+            background-color: #0e1626;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1a2942;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 900;
+            direction: ltr;
+            letter-spacing: 1px;
+        }
+        .logo .blue { color: #00d2ff; }
+        .logo .dark-blue { color: #0055ff; }
+
+        .header-user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #080c14;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #1a2942;
+        }
+
+        .header-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1a2942;
+        }
+
+        .header-user-name {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #ff4d4d;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            height: 100%;
+            background-color: #0e1626;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.7);
+            z-index: 2000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar.open { right: 0; }
+
+        .close-sidebar-btn {
+            align-self: flex-start;
+            background: none;
+            border: none;
+            color: #8aa4d6;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .sidebar-category {
+            font-size: 0.8rem;
+            color: #4a72b2;
+            margin: 12px 0 5px 0;
+            font-weight: bold;
+        }
+
+        .sidebar-menu-item {
+            background: #131f33;
+            color: #fff;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #1a2942;
+            text-align: right;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu-item:hover { 
+            background-color: #1a2b47; 
+            border-color: #00d2ff; 
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1999;
+            display: none;
+        }
+
+        .sidebar-overlay.active { display: block; }
+
+        .container {
+            padding: 20px 15px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+        }
+
+        .card {
+            background-color: #0e1626;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            margin-bottom: 20px;
+            line-height: 1.8;
+            border: 1px solid #1a2942;
+        }
+
+        .btn {
+            background-color: #0055ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover { background-color: #0044cc; }
+        .btn-cyan { background-color: #00d2ff; color: #000; }
+        .btn-cyan:hover { background-color: #00b8e6; }
+        .btn-red { background-color: #d92638; }
+        .btn-red:hover { background-color: #b31d2c; }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #b3cbe8;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #080c14;
+            border: 1px solid #1a2942;
+            color: #fff;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: #00d2ff;
+        }
+
+        .hidden { display: none !important; }
+
+        .status-box { text-align: center; padding: 30px 15px; }
+        .status-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 20px auto;
+            font-weight: bold;
+        }
+        .circle-yellow { background-color: #f39c12; color: #fff; box-shadow: 0 0 20px rgba(243, 156, 18, 0.4); }
+        .circle-blue { background-color: #00d2ff; color: #000; box-shadow: 0 0 20px rgba(0, 210, 255, 0.5); }
+        .circle-red { background-color: #d92638; color: #fff; box-shadow: 0 0 20px rgba(217, 38, 56, 0.4); }
+
+        .chat-modal {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 340px;
+            height: 450px;
+            background: #0e1626;
+            border: 1px solid #1a2942;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 3000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        }
+
+        .chat-header {
+            background: #131f33;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1a2942;
+        }
+
+        .chat-body {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-msg-wrapper { display: flex; flex-direction: column; max-width: 85%; }
+        .chat-msg-wrapper.self { align-self: flex-end; }
+        .chat-msg-wrapper.other { align-self: flex-start; }
+
+        .chat-sender-name { font-size: 0.75rem; color: #00d2ff; margin-bottom: 2px; font-weight: bold; }
+        .chat-msg { background: #131f33; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; color: #fff; border: 1px solid #1a2942; }
+        .chat-msg-wrapper.self .chat-msg { background: #0055ff; border: none; }
+
+        .chat-input { display: flex; border-top: 1px solid #1a2942; }
+        .chat-input input { flex: 1; padding: 10px; background: #080c14; border: none; color: #fff; }
+
+        .ticket-item, .app-item {
+            background: #080c14;
+            border: 1px solid #1a2942;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .rule-item { background: #080c14; padding: 10px; border-radius: 6px; margin: 8px 0; border-right: 3px solid #00d2ff; }
+
+        .radio-box {
+            background: #05080f;
+            border: 2px solid #1a2942;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 20px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .radio-screen {
+            background: #071324;
+            border: 2px solid #0055ff;
+            color: #00d2ff;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px rgba(0, 210, 255, 0.6);
+        }
+        .radio-btn-ptt {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+            background: #131f33;
+            color: #8aa4d6;
+            border: 2px solid #1a2942;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: 0.1s;
+        }
+        .radio-btn-ptt.active {
+            background: #0055ff !important;
+            color: #fff !important;
+            box-shadow: 0 0 20px rgba(0, 85, 255, 0.7);
+            border-color: #00d2ff !important;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .shop-card {
+            background: #080c14;
+            border: 1px solid #1a2942;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: 0.3s;
+        }
+        .shop-card:hover { border-color: #00d2ff; transform: translateY(-3px); }
+        .shop-price { font-size: 1.2rem; color: #00d2ff; font-weight: bold; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <div>Welcome to <span style="color:#00d2ff;">Power</span> <span style="color:#0055ff;">City RP</span></div>
+    </div>
+
+    <header>
+        <div class="header-right">
+            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+            <div class="logo"><span class="blue">POWER</span> <span class="dark-blue">CITY RP</span></div>
+        </div>
+        
+        <div id="header-user-container" class="header-user-profile hidden">
+            <img id="header-avatar" class="header-user-avatar" src="" alt="Avatar">
+            <span id="header-username" class="header-user-name">زائر</span>
+            <button class="logout-btn" onclick="logout()" title="تسجيل الخروج">🚪</button>
+        </div>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <button class="close-sidebar-btn" onclick="toggleSidebar()">✕</button>
+
+        <div class="sidebar-menu-item" onclick="openSidebarTab('account-info')">👤 معلومات حسابك</div>
+
+        <div id="unactive-sidebar-items">
+            <div class="sidebar-category">القائمة العامة</div>
+            <div id="sidebar-rules-btn" class="sidebar-menu-item" onclick="openSidebarTab('rules')">📜 القوانين والمصطلحات</div>
+            <div id="sidebar-apply-btn" class="sidebar-menu-item" onclick="openSidebarTab('apply')">📝 تقديم السيرفر</div>
+            <div class="sidebar-menu-item" style="border-color:#00d2ff; color:#00d2ff;" onclick="openSidebarTab('shop-unactivated')">🛒 متجر الخدمات والاشتراكات</div>
+        </div>
+
+        <div id="active-sidebar-items" class="hidden">
+            <div class="sidebar-category">أخبار وخدمات السيرفر</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('news')">📢 أخبار المدينة والتحديثات</div>
+            <div class="sidebar-menu-item" style="border-color:#00d2ff; color:#00d2ff;" onclick="openSidebarTab('radio')">📻 جهاز الراديو اللاسلكي</div>
+            <div class="sidebar-menu-item" style="border-color:#0055ff; color:#00d2ff;" onclick="openSidebarTab('shop')">🛒 متجر المدينة (شراء الورش)</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('police-rules')">⚖️ تعليمات الشرطة</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('police-app')">🚔 تقديم الشرطة</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('swat-app')">🛡️ تقديم SWAT</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('medic-app')">🚑 تقديم المسعف</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('gangs')">💀 التقديم على جانج</div>
+            
+            <div class="sidebar-category">التواصل والإنشاء</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('support')">🎧 الدعم الفني</div>
+            <div class="sidebar-menu-item" onclick="openSidebarTab('organizers')">👑 التواصل مع المنظمين</div>
+        </div>
+
+        <div id="admin-tickets-btn" class="sidebar-menu-item hidden" style="border-color: #00d2ff; margin-top:15px;" onclick="openSidebarTab('admin-tickets')">📩 إدارة التكتات والطلبات</div>
+        <div id="admin-apps-btn" class="sidebar-menu-item hidden" style="border-color: #0055ff;" onclick="openSidebarTab('admin-apps')">📋 معلومات التقديم والطعون</div>
+    </div>
+
+    <div class="container">
+        <div id="main-content" class="card"></div>
+    </div>
+
+    <div id="chat-widget" class="chat-modal hidden">
+        <div class="chat-header">
+            <span id="chat-title">شات التكت</span>
+            <button onclick="closeChat()" style="background:none; border:none; color:#aaa; cursor:pointer;">✕</button>
+        </div>
+        <div class="chat-body" id="chat-messages"></div>
+        <div class="chat-input">
+            <input type="text" id="chat-text" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <button class="btn btn-cyan" style="border-radius:0;" onclick="sendChatMessage()">إرسال</button>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات بوت Power City والمُعرِّف الخاص بالديسكورد
+        const CLIENT_ID = "1540378022275776916"; 
+        const BOT_TOKEN = "MTU0Mzc4MDIyMjc1Nzc2OTIxNg.Gp4a8H.8guqcTR2EW5T9_sIFEfxoT6huz0z3EyOstsAgs";
+        const REDIRECT_URI = window.location.href.split('#')[0];
+        const GUILD_ID = "1489235493022466159";
+        
+        const ACTIVE_ROLE_ID = "1531661917490249760";
+        const SUPPORT_ROLE_ID = "1524866511720812624";
+        const ORGANIZER_ROLE_ID = "1536776703735500800";
+
+        // روابط سيرفر Power City
+        const DISCORD_INVITE_LINK = "https://discord.gg/euh5KxNaTk";
+        const DISCORD_ACTIVATED_SHOP_ROOM = "https://discord.com/channels/1489235493022466159/1545156993243815986";
+        const DISCORD_UNACTIVATED_SHOP_ROOM = "https://discord.com/channels/1489235493022466159/1521868345375326278";
+
+        const MONGO_CLOUD_ENDPOINT = "https://jsonblob.com/api/jsonBlob/1210000000000000000";
+
+        let currentUser = null;
+        let isActivated = false;
+        let isSupportAdmin = false;
+        let isOrganizerAdmin = false;
+        let activeToken = null;
+        let activeTicketType = '';
+        let currentTicketUser = '';
+
+        // Radio State
+        let currentFrequency = null;
+        let isTalking = false;
+        let mediaStream = null;
+
+        let dbData = {
+            apps: {},
+            tickets: {},
+            appeals: [],
+            radioFreqs: {}
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.style.opacity = '0';
+                setTimeout(() => splash.classList.add('hidden'), 500);
+            }, 1000);
+
+            checkDiscordAuth();
+            syncWithMongoDB();
+            setInterval(syncWithMongoDB, 2000);
+
+            window.addEventListener('keydown', (e) => {
+                if(e.code === 'Space' && currentFrequency && !isTalking && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    startTalking();
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                if(e.code === 'Space' && isTalking) {
+                    e.preventDefault();
+                    stopTalking();
+                }
+            });
+        });
+
+        async function syncWithMongoDB() {
+            try {
+                const res = await fetch(MONGO_CLOUD_ENDPOINT);
+                if(res.ok) {
+                    const cloudData = await res.json();
+                    if(cloudData && typeof cloudData === 'object') {
+                        dbData = cloudData;
+                        refreshCurrentActiveView();
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function saveToMongoDB() {
+            try {
+                await fetch(MONGO_CLOUD_ENDPOINT, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dbData)
+                });
+            } catch(e) {}
+        }
+
+        function refreshCurrentActiveView() {
+            const chatWidget = document.getElementById('chat-widget');
+            if (!chatWidget.classList.contains('hidden')) {
+                renderChatMessages();
+            }
+            if (currentFrequency) {
+                updateRadioUI();
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        function redirectToDiscord() {
+            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds.members.read`;
+            window.location.href = authUrl;
+        }
+
+        function logout() {
+            localStorage.removeItem('discord_access_token');
+            window.location.href = REDIRECT_URI;
+        }
+
+        function checkDiscordAuth() {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const tokenFromUrl = fragment.get('access_token');
+
+            if (tokenFromUrl) {
+                activeToken = tokenFromUrl;
+                localStorage.setItem('discord_access_token', activeToken);
+                window.location.hash = '';
+            } else {
+                activeToken = localStorage.getItem('discord_access_token');
+            }
+
+            if (activeToken) {
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { authorization: `Bearer ${activeToken}` }
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Token Expired');
+                    return res.json();
+                })
+                .then(userData => {
+                    currentUser = userData;
+
+                    document.getElementById('header-user-container').classList.remove('hidden');
+                    document.getElementById('header-username').innerText = currentUser.username;
+                    const avatarUrl = currentUser.avatar 
+                        ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
+                        : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    document.getElementById('header-avatar').src = avatarUrl;
+
+                    fetch(`https://discord.com/api/users/@me/guilds/${GUILD_ID}/member`, {
+                        headers: { authorization: `Bearer ${activeToken}` }
+                    })
+                    .then(res => res.json())
+                    .then(memberData => {
+                        const roles = memberData.roles || [];
+                        isActivated = roles.includes(ACTIVE_ROLE_ID);
+                        isSupportAdmin = roles.includes(SUPPORT_ROLE_ID);
+                        isOrganizerAdmin = roles.includes(ORGANIZER_ROLE_ID);
+
+                        if(isActivated) {
+                            document.getElementById('active-sidebar-items').classList.remove('hidden');
+                            document.getElementById('unactive-sidebar-items').classList.add('hidden');
+                        }
+
+                        if(isSupportAdmin || isOrganizerAdmin) {
+                            document.getElementById('admin-tickets-btn').classList.remove('hidden');
+                        }
+                        if(isOrganizerAdmin) {
+                            document.getElementById('admin-apps-btn').classList.remove('hidden');
+                        }
+
+                        openSidebarTab(isActivated ? 'news' : 'apply');
+                    })
+                    .catch(() => openSidebarTab('apply'));
+                })
+                .catch(() => {
+                    localStorage.removeItem('discord_access_token');
+                    openSidebarTab('auth');
+                });
+            } else {
+                openSidebarTab('auth');
+            }
+        }
+
+        function openSidebarTab(tab) {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+            const content = document.getElementById('main-content');
+
+            if(tab === 'auth') {
+                content.innerHTML = `
+                    <div style="text-align:center; padding: 20px 0;">
+                        <h2>مرحباً بك في سيرفر <span style="color:#00d2ff;">Power City RP</span></h2>
+                        <p style="margin-top: 10px; color: #8aa4d6;">يرجى تسجيل الدخول بحساب الديسكورد عبر البوت المعتمد للوصول للخدمات والتقديم</p>
+                        <button class="btn btn-cyan" onclick="redirectToDiscord()" style="margin-top:20px; font-weight:bold;">تسجيل الدخول عبر Discord</button>
+                    </div>`;
+                return;
+            }
+
+            if(tab === 'rules') {
+                content.innerHTML = `
+                    <h2 style="text-align:center;">- POWER CITY RP -</h2>
+                    <h3 style="text-align:center; color:#00d2ff;">- RolePlay Rules -</h3>
+                    <p style="text-align:center; color:#b3cbe8;">تقمص الشخصية بكل حقوقها وسلطاتها كما هو الحال في الواقع تماماً.</p>
+                    <hr style="border-color:#1a2942; margin:15px 0;">
+                    <div class="rule-item"><strong>- Fail RP -</strong><br>مخالفة لقوانين الرول بلاي أو التصرف بطريقة غير واقعية داخل المدينة.</div>
+                    <div class="rule-item"><strong>- VDM -</strong><br>استخدام المركبة للقتل أو إلحاق الضرر بالآخرين بدون سبب.</div>
+                    <div class="rule-item"><strong>- RDM -</strong><br>القتل العشوائي بدون أي سيناريو أو تهديد مسبق.</div>
+                `;
+            } else if(tab === 'apply') {
+                renderUserApplyStatus();
+            } else if(tab === 'radio') {
+                if(!isActivated) return;
+                renderRadioView();
+            } else if(tab === 'shop') {
+                if(!isActivated) return;
+                renderShopView();
+            } else if(tab === 'shop-unactivated') {
+                renderUnactivatedShopView();
+            } else if(tab === 'appeal') {
+                renderAppealForm();
+            } else if(tab === 'news') {
+                content.innerHTML = `<h2>أخبار المدينة والتحديثات 📢</h2><br><p style="color:#b3cbe8;">أهلاً بك مجدداً يا ${currentUser ? currentUser.username : ''} في البوابة الإلكترونية لسيرفر Power City RP.</p>`;
+            } else if(tab === 'police-rules') {
+                content.innerHTML = `<h2>تعليمات وإرشادات الشرطة ⚖️</h2><br><p style="color:#b3cbe8;">يرجى الالتزام بالتعليمات والبروتوكولات الخاصة بقطاع الشرطة...</p>`;
+            } else if(tab === 'police-app') {
+                content.innerHTML = `<h2>تقديم الشرطة 🚔</h2><br><p style="color:#b3cbe8;">باب التقديم لقطاع الشرطة مفتوح حالياً لأعضاء Power City.</p>`;
+            } else if(tab === 'swat-app') {
+                content.innerHTML = `<h2>تقديم قوات SWAT 🛡️</h2><br><p style="color:#b3cbe8;">التنافس على الانضمام لفرقة العمليات الخاصة SWAT.</p>`;
+            } else if(tab === 'medic-app') {
+                content.innerHTML = `<h2>تقديم المسعفين 🚑</h2><br><p style="color:#b3cbe8;">تقديم المستشفى والخدمات الطبية بالمدينة.</p>`;
+            } else if(tab === 'gangs') {
+                content.innerHTML = `<h2>التقديم على العصابات 💀</h2><p style="color:#8aa4d6;">تواصل مع إدارة العصابات عبر التكت للتقديم المباشر.</p>`;
+            } else if (tab === 'account-info') {
+                const avatarUrl = currentUser && currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                content.innerHTML = `
+                    <h2>معلومات حسابك</h2><br>
+                    <div style="display:flex; align-items:center; gap:15px; background:#080c14; padding:15px; border-radius:8px; border:1px solid #1a2942;">
+                        <img style="width:60px; height:60px; border-radius:50%;" src="${avatarUrl}" alt="Avatar">
+                        <div>
+                            <h3>${currentUser ? currentUser.username : 'غير مسجل'}</h3>
+                            <p style="color:${isActivated ? '#00d2ff' : '#d92638'}; font-weight:bold;">${isActivated ? '🟢 مواطن مفعل' : '🔴 غير مفعل'}</p>
+                        </div>
+                    </div>
+                `;
+            } else if (tab === 'support') {
+                renderRoleContactView('الدعم الفني');
+            } else if (tab === 'organizers') {
+                renderRoleContactView('التواصل مع المنظمين');
+            } else if (tab === 'admin-tickets') {
+                renderAdminTicketsPage();
+            } else if (tab === 'admin-apps') {
+                renderAdminAppsPage();
+            }
+        }
+
+        /* ----- RADIO SYSTEM ----- */
+        function renderRadioView() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2 style="text-align:center;">📻 جهاز الراديو اللاسلكي (Radio System)</h2>
+                <p style="text-align:center; color:#8aa4d6; margin-bottom:20px;">نظام التواصل الصوتي عبر الأثير لأعضاء Power City</p>
+                
+                <div class="radio-box">
+                    <div class="radio-screen">
+                        <div style="font-size:0.8rem; color:#4a72b2;">POWER CITY RP - DIGITAL RADIO</div>
+                        <div id="radio-display-freq" style="font-size:1.8rem; margin:8px 0;">${currentFrequency ? 'Mhz ' + currentFrequency : 'DISCONNECTED'}</div>
+                        <div id="radio-display-status" style="font-size:0.9rem;">${currentFrequency ? '🟢 متصل' : '🔴 غير متصل'}</div>
+                        <div id="radio-display-count" style="font-size:0.8rem; margin-top:5px; color:#00d2ff;">${currentFrequency ? 'المتواجدين: ' + getFreqUsersCount(currentFrequency) : ''}</div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="number" id="freq-input" placeholder="أدخل رقم التردد..." style="background:#080c14; border:1px solid #1a2942; color:#fff; padding:10px; border-radius:6px; width:100%; text-align:center;">
+                        <button class="btn btn-cyan" onclick="joinFrequency()">انضمام</button>
+                        <button class="btn btn-red" onclick="leaveFrequency()">قطع</button>
+                    </div>
+
+                    <button id="ptt-btn" class="radio-btn-ptt" onmousedown="startTalking()" onmouseup="stopTalking()" ontouchstart="startTalking()" ontouchend="stopTalking()">
+                        🎙️ اضغط للتحدث (Push To Talk)<br><small style="font-size:0.75rem;">أو اضغط زر Space من الكيبورد</small>
+                    </button>
+                </div>
+            `;
+        }
+
+        function getFreqUsersCount(freq) {
+            if(!dbData.radioFreqs || !dbData.radioFreqs[freq]) return 0;
+            return Object.keys(dbData.radioFreqs[freq]).length;
+        }
+
+        async function joinFrequency() {
+            const freq = document.getElementById('freq-input').value.trim();
+            if(!freq) return alert('برجاء إدخال رقم التردد أولاً');
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch(e) {
+                alert('يرجى السماح بصلاحية المايكروفون لاستخدام الراديو اللاسلكي.');
+                return;
+            }
+
+            if(currentFrequency && dbData.radioFreqs && dbData.radioFreqs[currentFrequency]) {
+                delete dbData.radioFreqs[currentFrequency][currentUser.username];
+            }
+
+            currentFrequency = freq;
+            if(!dbData.radioFreqs) dbData.radioFreqs = {};
+            if(!dbData.radioFreqs[freq]) dbData.radioFreqs[freq] = {};
+
+            dbData.radioFreqs[freq][currentUser.username] = true;
+            await saveToMongoDB();
+
+            updateRadioUI();
+        }
+
+        async function leaveFrequency() {
+            if(currentFrequency && dbData.radioFreqs && dbData.radioFreqs[currentFrequency]) {
+                delete dbData.radioFreqs[currentFrequency][currentUser.username];
+                await saveToMongoDB();
+            }
+            currentFrequency = null;
+            if(mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
+            updateRadioUI();
+        }
+
+        function updateRadioUI() {
+            const freqDisp = document.getElementById('radio-display-freq');
+            const statusDisp = document.getElementById('radio-display-status');
+            const countDisp = document.getElementById('radio-display-count');
+
+            if(freqDisp && statusDisp && countDisp) {
+                if(currentFrequency) {
+                    freqDisp.innerText = 'Mhz ' + currentFrequency;
+                    statusDisp.innerText = '🟢 متصل بالتردد';
+                    countDisp.innerText = 'المتواجدين بالأجهزة: ' + getFreqUsersCount(currentFrequency);
+                } else {
+                    freqDisp.innerText = 'DISCONNECTED';
+                    statusDisp.innerText = '🔴 غير متصل';
+                    countDisp.innerText = '';
+                }
+            }
+        }
+
+        function startTalking() {
+            if(!currentFrequency) return;
+            isTalking = true;
+            const pttBtn = document.getElementById('ptt-btn');
+            if(pttBtn) pttBtn.classList.add('active');
+        }
+
+        function stopTalking() {
+            if(!currentFrequency) return;
+            isTalking = false;
+            const pttBtn = document.getElementById('ptt-btn');
+            if(pttBtn) pttBtn.classList.remove('active');
+        }
+
+        /* ----- SHOPS ----- */
+        function renderShopView() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2>🛒 متجر ورش وممتلكات Power City (خاص بالمفعلين)</h2>
+                <p style="color:#8aa4d6;">يمكنك شراء الورش والنشاطات التجارية بفلوس داخل اللعبة (In-Game Money).</p>
+                
+                <div class="shop-grid">
+                    <div class="shop-card">
+                        <div>
+                            <h3>🔧 ورشة صيانة السيارات المركزية</h3>
+                            <p style="color:#8aa4d6; font-size:0.85rem; margin-top:5px;">ورشة صيانة وتصليح جميع السيارات داخل المدينة مع إمكانية توظيف ميكانيكية.</p>
+                            <div class="shop-price">$500,000 / كاش داخل اللعبة</div>
+                        </div>
+                        <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="buyActivatedItem('ورشة صيانة السيارات المركزية')">شراء الورشة</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>🏎️ ورشة تعديل المحركات والسباقات</h3>
+                            <p style="color:#8aa4d6; font-size:0.85rem; margin-top:5px;">متخصصة في تركيب التيربو، التعديل الرياضي وتغيير ألوان المركبات.</p>
+                            <div class="shop-price">$750,000 / كاش داخل اللعبة</div>
+                        </div>
+                        <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="buyActivatedItem('ورشة تعديل المحركات والسباقات')">شراء الورشة</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>🔨 ورشة الحدادة وتصنيع المعدات</h3>
+                            <p style="color:#8aa4d6; font-size:0.85rem; margin-top:5px;">ورشة صناعية مخصصة لإنتاج المواد والأدوات الثقيلة.</p>
+                            <div class="shop-price">$1,000,000 / كاش داخل اللعبة</div>
+                        </div>
+                        <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="buyActivatedItem('ورشة الحدادة وتصنيع المعدات')">شراء الورشة</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buyActivatedItem(itemName) {
+            alert(`سيتم تحويلك إلى روم الشراء بالسيرفر للتواصل مع الإدارة وإتمام شراء "${itemName}".`);
+            window.open(DISCORD_ACTIVATED_SHOP_ROOM, '_blank');
+            openWebsiteChat(`طلب شراء: ${itemName}`);
+        }
+
+        function renderUnactivatedShopView() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2>🛒 متجر الخدمات والاشتراكات الخاص بالزوار</h2>
+                <p style="color:#8aa4d6;">تسهيلات وخدمات خاصة يمكنك طلبها مباشرة للتسجيل والمتابعة مع إدارة Power City.</p>
+                
+                <div class="shop-grid">
+                    <div class="shop-card">
+                        <div>
+                            <h3>⚡ أولوية التقديم</h3>
+                            <p style="color:#8aa4d6; font-size:0.85rem; margin-top:5px;">مراجعة استمارة التقديم الخاصة بك وإعطاؤها الأولوية من قبل فريق الإدارة.</p>
+                        </div>
+                        <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="buyUnactivatedItem('أولوية التقديم')">طلب أولوية التقديم</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>⭐ تقديم خاص</h3>
+                            <p style="color:#8aa4d6; font-size:0.85rem; margin-top:5px;">إجراء المقابلة والتقديم بشكل مباشر وسريع في روم خاصة مع إداري.</p>
+                        </div>
+                        <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="buyUnactivatedItem('تقديم خاص')">طلب تقديم خاص</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>🔓 فك البان</h3>
+                            <p style="color:#8aa4d6; font-size:0.85rem; margin-top:5px;">طلب مراجعة العقوبة وفك البان عن حسابك للدخول إلى Power City مجدداً.</p>
+                        </div>
+                        <button class="btn btn-cyan" style="width:100%; margin-top:15px;" onclick="buyUnactivatedItem('فك البان')">طلب فك البان</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buyUnactivatedItem(itemName) {
+            alert(`سيتم تحويلك إلى روم الطلبات بالديسكورد للتواصل مع الإدارة بخصوص "${itemName}".`);
+            window.open(DISCORD_UNACTIVATED_SHOP_ROOM, '_blank');
+            openWebsiteChat(`طلب خدمة: ${itemName}`);
+        }
+
+        function renderUserApplyStatus() {
+            const content = document.getElementById('main-content');
+            if(!currentUser) return;
+
+            const userApp = dbData.apps ? dbData.apps[currentUser.username] : null;
+
+            if(!userApp) {
+                document.getElementById('sidebar-rules-btn').classList.remove('hidden');
+                content.innerHTML = `
+                    <h2>أهلاً بيك في تيكت التقديم Power City RP 🏙️</h2><br>
+                    <form onsubmit="submitApplication(event)">
+                        <div class="form-group"><label>1. الاسم:</label><input type="text" id="app_name" required></div>
+                        <div class="form-group"><label>2. العمر:</label><input type="number" id="app_age" required></div>
+                        <div class="form-group"><label>3. اسم الشخصية داخل السيرفر:</label><input type="text" id="app_char" required></div>
+                        <div class="form-group"><label>4. خبرتك في الـRP:</label><textarea id="app_exp" required></textarea></div>
+                        <div class="form-group"><label>5. سبب الانضمام:</label><textarea id="app_reason" required></textarea></div>
+                        <button type="submit" class="btn btn-cyan">إرسال استمارة التقديم</button>
+                    </form>
+                `;
+                return;
+            }
+
+            document.getElementById('sidebar-rules-btn').classList.add('hidden');
+
+            if(userApp.status === 'pending') {
+                content.innerHTML = `
+                    <div class="status-box">
+                        <div class="status-circle circle-yellow">⏳</div>
+                        <h2>برجاء انتظار إدارة Power City بالتحقق من تقديمك وسيتم الرد عليك في أقرب وقت</h2>
+                    </div>
+                `;
+            } else if(userApp.status === 'accepted') {
+                content.innerHTML = `
+                    <div class="status-box">
+                        <div class="status-circle circle-blue">✔</div>
+                        <h2>تم قبولك في Power City!</h2>
+                        <p style="margin-top:10px; font-size:1.1rem; color:#b3cbe8;">برجاء التوجه للسيرفر يوجد لديك مقابلة الآن.</p>
+                    </div>
+                `;
+            } else if(userApp.status === 'rejected') {
+                const now = Date.now();
+                const timePassed = now - userApp.rejectedAt;
+                const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - timePassed) / (1000 * 60 * 60));
+                const canAppeal = timePassed >= 24 * 60 * 60 * 1000;
+
+                content.innerHTML = `
+                    <div class="status-box">
+                        <div class="status-circle circle-red">✖</div>
+                        <h2>تم رفضك في سيرفر Power City RP</h2>
+                        <br>
+                        <p style="color:#8aa4d6;"><b>الاداري الذي قام بالرفض:</b> ${userApp.rejectedBy}</p>
+                        <p style="color:#d92638; margin-top:5px;"><b>سبب الرفض:</b> ${userApp.rejectReason}</p>
+                        <hr style="border-color:#1a2942; margin:20px 0;">
+                        ${canAppeal 
+                            ? `<button class="btn btn-cyan" onclick="openSidebarTab('appeal')">تقديم طعن على التقديم</button>`
+                            : `<p style="color:#e67e22;">يمكنك تقديم طعن بعد مرور 24 ساعة (المتبقي: ${hoursLeft} ساعة تقريباً)</p>`
+                        }
+                    </div>
+                `;
+            }
+        }
+
+        async function submitApplication(e) {
+            e.preventDefault();
+            if(!dbData.apps) dbData.apps = {};
+
+            dbData.apps[currentUser.username] = {
+                username: currentUser.username,
+                name: document.getElementById('app_name').value,
+                age: document.getElementById('app_age').value,
+                charName: document.getElementById('app_char').value,
+                exp: document.getElementById('app_exp').value,
+                reason: document.getElementById('app_reason').value,
+                status: 'pending'
+            };
+            await saveToMongoDB();
+            renderUserApplyStatus();
+        }
+
+        function renderAppealForm() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2>تقديم طعن على التقديم 📝</h2>
+                <p style="color:#8aa4d6; margin-bottom:15px;">اليوزر: <strong>${currentUser.username}</strong></p>
+                <form onsubmit="submitAppeal(event)">
+                    <div class="form-group">
+                        <label>1. ما هو سبب الرفض المذكور لك؟</label>
+                        <textarea id="appeal_q1" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>2. أين تفضل إجراء التقديم/المقابلة المباشرة؟</label>
+                        <select id="appeal_q2"><option>في الديسكورد</option><option>في الموقع</option></select>
+                    </div>
+                    <button type="submit" class="btn btn-cyan">إرسال الطعن للإدارة</button>
+                </form>
+            `;
+        }
+
+        async function submitAppeal(e) {
+            e.preventDefault();
+            if(!dbData.appeals) dbData.appeals = [];
+            dbData.appeals.push({
+                username: currentUser.username,
+                q1: document.getElementById('appeal_q1').value,
+                q2: document.getElementById('appeal_q2').value,
+                time: new Date().toLocaleString()
+            });
+            await saveToMongoDB();
+            alert('تم إرسال الطعن بنجاح! سيتم التواصل معك قريباً.');
+            openSidebarTab('apply');
+        }
+
+        function renderAdminAppsPage() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `<h2>معلومات التقديمات والطعونات 📋</h2><br>`;
+
+            let hasPending = false;
+
+            content.innerHTML += `<h3>التقديمات المعلقة:</h3><br>`;
+            if(dbData.apps) {
+                for (let user in dbData.apps) {
+                    let app = dbData.apps[user];
+                    if(app.status === 'pending') {
+                        hasPending = true;
+                        content.innerHTML += `
+                            <div class="app-item">
+                                <h4>👤 اليوزر: <span style="color:#00d2ff;">${app.username}</span></h4>
+                                <p><b>الاسم والعمر:</b> ${app.name} (${app.age} سنة)</p>
+                                <p><b>اسم الشخصية:</b> ${app.charName}</p>
+                                <p><b>الخبرة:</b> ${app.exp}</p>
+                                <p><b>السبب:</b> ${app.reason}</p>
+                                <div style="margin-top:10px; display:flex; gap:10px;">
+                                    <button class="btn btn-cyan" onclick="acceptApp('${app.username}')">✔ قبول</button>
+                                    <button class="btn btn-red" onclick="rejectAppPrompt('${app.username}')">✖ رفض</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            if(!hasPending) content.innerHTML += `<p style="color:#8aa4d6;">لا توجد تقديمات معلقة حالياً.</p>`;
+
+            content.innerHTML += `<hr style="border-color:#1a2942; margin:20px 0;"><h3>الطعونات المقدمة:</h3><br>`;
+            if(!dbData.appeals || dbData.appeals.length === 0) {
+                content.innerHTML += `<p style="color:#8aa4d6;">لا توجد طعونات مقدمة.</p>`;
+            } else {
+                dbData.appeals.forEach(ap => {
+                    content.innerHTML += `
+                        <div class="app-item">
+                            <h4>👤 اليوزر: <span style="color:#00d2ff;">${ap.username}</span> (${ap.time})</h4>
+                            <p><b>سبب الرفض السابق:</b> ${ap.q1}</p>
+                            <p><b>مكان المقابلة المفضل:</b> ${ap.q2}</p>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        async function acceptApp(username) {
+            dbData.apps[username].status = 'accepted';
+            await saveToMongoDB();
+            renderAdminAppsPage();
+        }
+
+        async function rejectAppPrompt(username) {
+            const reason = prompt('برجاء كتابة سبب الرفض:');
+            if(reason) {
+                dbData.apps[username].status = 'rejected';
+                dbData.apps[username].rejectedBy = currentUser.username;
+                dbData.apps[username].rejectReason = reason;
+                dbData.apps[username].rejectedAt = Date.now();
+                await saveToMongoDB();
+                renderAdminAppsPage();
+            }
+        }
+
+        function renderRoleContactView(title) {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2>تكت ${title}</h2><br>
+                <p>الحالة: <strong style="color:#00d2ff;">متاح أونلاين 🟢</strong></p><br>
+                <button class="btn btn-cyan" onclick="openWebsiteChat('${title}')">✉️ فتح تكت بالموقع</button>
+            `;
+        }
+
+        function openWebsiteChat(type) {
+            activeTicketType = type;
+            currentTicketUser = currentUser ? currentUser.username : 'زائر';
+            document.getElementById('chat-title').innerText = `تكت ${type}`;
+            document.getElementById('chat-widget').classList.remove('hidden');
+            renderChatMessages();
+        }
+
+        function closeChat() {
+            document.getElementById('chat-widget').classList.add('hidden');
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-text');
+            const msg = input.value.trim();
+            if(!msg || !currentUser) return;
+
+            if(!dbData.tickets) dbData.tickets = {};
+            const ticketKey = `${currentTicketUser}_${activeTicketType}`;
+
+            if (!dbData.tickets[ticketKey]) {
+                dbData.tickets[ticketKey] = { user: currentTicketUser, type: activeTicketType, messages: [] };
+            }
+
+            dbData.tickets[ticketKey].messages.push({ sender: currentUser.username, text: msg });
+            await saveToMongoDB();
+
+            input.value = '';
+            renderChatMessages();
+        }
+
+        function renderChatMessages() {
+            const chatBody = document.getElementById('chat-messages');
+            chatBody.innerHTML = '';
+
+            const ticketKey = `${currentTicketUser}_${activeTicketType}`;
+            let ticket = dbData.tickets ? dbData.tickets[ticketKey] : null;
+
+            if (!ticket || !ticket.messages || ticket.messages.length === 0) {
+                chatBody.innerHTML = `<div class="chat-msg">اكتب رسالتك وسيرد عليك الإداري المختص.</div>`;
+                return;
+            }
+
+            ticket.messages.forEach(m => {
+                const wrapper = document.createElement('div');
+                const isSelf = m.sender === currentUser.username;
+                wrapper.className = `chat-msg-wrapper ${isSelf ? 'self' : 'other'}`;
+                wrapper.innerHTML = `<div class="chat-sender-name">${m.sender}</div><div class="chat-msg">${m.text}</div>`;
+                chatBody.appendChild(wrapper);
+            });
+
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function renderAdminTicketsPage() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `<h2>لوحة إدارة التكتات والطلبات 📩</h2><br>`;
+
+            if(!dbData.tickets) {
+                content.innerHTML += `<p style="color:#8aa4d6;">لا توجد تكتات مفتوحة حالياً.</p>`;
+                return;
+            }
+
+            let keys = Object.keys(dbData.tickets);
+
+            if (keys.length === 0) {
+                content.innerHTML += `<p style="color:#8aa4d6;">لا توجد تكتات مفتوحة حالياً.</p>`;
+                return;
+            }
+
+            keys.forEach(key => {
+                let t = dbData.tickets[key];
+                
+                if (isSupportAdmin && !isOrganizerAdmin && t.type !== 'الدعم الفني') return;
+
+                const item = document.createElement('div');
+                item.className = 'ticket-item';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.innerHTML = `
+                    <div>
+                        <strong>${t.user}</strong> - <span style="color:#00d2ff;">${t.type}</span>
+                    </div>
+                    <button class="btn btn-cyan" onclick="adminOpenTicket('${t.user}', '${t.type}')">الرد على التكت</button>
+                `;
+                content.appendChild(item);
+            });
+        }
+
+        function adminOpenTicket(username, type) {
+            activeTicketType = type;
+            currentTicketUser = username;
+            document.getElementById('chat-title').innerText = `تكت ${type} - ${username}`;
+            document.getElementById('chat-widget').classList.remove('hidden');
+            renderChatMessages();
+        }
+    </script>
+</body>
+</html>
