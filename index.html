@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Egypt RP</title>
+    <!-- مكتبة PeerJS للاتصال الصوتي المباشر بين اللاعبين WebRTC -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -451,10 +453,12 @@
         let activeTicketType = '';
         let currentTicketUser = '';
 
-        // Radio State
+        // Radio & WebRTC Voice State
         let currentFrequency = null;
         let isTalking = false;
-        let mediaStream = null;
+        let localStream = null;
+        let myPeer = null;
+        let activeCalls = {};
 
         let dbData = {
             apps: {},
@@ -519,6 +523,7 @@
             }
             if (currentFrequency) {
                 updateRadioUI();
+                connectToFreqUsers(currentFrequency);
             }
         }
 
@@ -641,7 +646,7 @@
             } else if(tab === 'appeal') {
                 renderAppealForm();
             } else if(tab === 'news') {
-                content.innerHTML = `<h2>أخبار المدينة والتحديثات 📢</h2><br><p style="color:#ccc;">أهلاً بك مجدداً يا ${currentUser ? currentUser.username : ''} في لوحة خدمات أعضاء Egypt RP.</p>`;
+                content.innerHTML = `2>أخبار المدينة والتحديثات 📢</h2><br><p style="color:#ccc;">أهلاً بك مجدداً يا ${currentUser ? currentUser.username : ''} في لوحة خدمات أعضاء Egypt RP.</p>`;
             } else if(tab === 'police-rules') {
                 content.innerHTML = `<h2>تعليمات وإرشادات الشرطة ⚖️</h2><br><p style="color:#ccc;">يرجى الالتزام بالتعليمات الخاصة بقطاع الشرطة...</p>`;
             } else if(tab === 'police-app') {
@@ -676,7 +681,7 @@
             }
         }
 
-        /* ----- نظام الراديو اللاسلكي RADIO SYSTEM ----- */
+        /* ----- نظام الراديو اللاسلكي RADIO SYSTEM (مع الصوت المباشر WebRTC) ----- */
         function renderRadioView() {
             const content = document.getElementById('main-content');
             content.innerHTML = `
@@ -724,7 +729,25 @@
             }
 
             try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // 1. إعداد الصوت والمايك للباتش المباشر
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                setMicrophoneMute(true); // كتم الصوت حتي الضغط على Push To Talk
+
+                // 2. إنشاء اتصال PeerJS صوتي خاص باللاعب
+                if (!myPeer) {
+                    const cleanPeerId = 'egrp_radio_' + currentUser.username.replace(/[^a-zA-Z0-9]/g, '_');
+                    myPeer = new Peer(cleanPeerId);
+
+                    // استقبال مكالمات صوتية من باقي الأعضاء في التردد
+                    myPeer.on('call', call => {
+                        call.answer(localStream);
+                        call.on('stream', userAudioStream => {
+                            playIncomingAudioStream(call.peer, userAudioStream);
+                        });
+                        activeCalls[call.peer] = call;
+                    });
+                }
+
             } catch(e) {
                 alert('يرجى السماح بصلاحية المايكروفون لاستخدام الراديو اللاسلكي.');
                 return;
@@ -741,7 +764,40 @@
             dbData.radioFreqs[freqVal][currentUser.username] = true;
             await saveToMongoDB();
 
+            // 3. الاتصال بكافة الموجودين في نفس الموجة
+            connectToFreqUsers(freqVal);
+
             updateRadioUI();
+        }
+
+        function connectToFreqUsers(freq) {
+            if(!myPeer) return;
+            const usersInFreq = dbData.radioFreqs[freq] || {};
+            for (let username in usersInFreq) {
+                if (username !== currentUser.username) {
+                    const targetPeerId = 'egrp_radio_' + username.replace(/[^a-zA-Z0-9]/g, '_');
+                    if (!activeCalls[targetPeerId]) {
+                        const call = myPeer.call(targetPeerId, localStream);
+                        if (call) {
+                            call.on('stream', userAudioStream => {
+                                playIncomingAudioStream(targetPeerId, userAudioStream);
+                            });
+                            activeCalls[targetPeerId] = call;
+                        }
+                    }
+                }
+            }
+        }
+
+        function playIncomingAudioStream(peerId, stream) {
+            let audioElem = document.getElementById('audio_' + peerId);
+            if (!audioElem) {
+                audioElem = document.createElement('audio');
+                audioElem.id = 'audio_' + peerId;
+                audioElem.autoplay = true;
+                document.body.appendChild(audioElem);
+            }
+            audioElem.srcObject = stream;
         }
 
         async function leaveFrequency() {
@@ -749,11 +805,21 @@
                 delete dbData.radioFreqs[currentFrequency][currentUser.username];
                 await saveToMongoDB();
             }
-            currentFrequency = null;
-            if(mediaStream) {
-                mediaStream.getTracks().forEach(t => t.stop());
-                mediaStream = null;
+
+            // إغلاق اتصالات الصوت النشطة
+            for (let peerId in activeCalls) {
+                if (activeCalls[peerId]) activeCalls[peerId].close();
+                const audioElem = document.getElementById('audio_' + peerId);
+                if (audioElem) audioElem.remove();
             }
+            activeCalls = {};
+
+            currentFrequency = null;
+            if(localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+            }
+
             updateRadioUI();
         }
 
@@ -775,9 +841,16 @@
             }
         }
 
+        function setMicrophoneMute(isMuted) {
+            if (localStream && localStream.getAudioTracks().length > 0) {
+                localStream.getAudioTracks()[0].enabled = !isMuted;
+            }
+        }
+
         function startTalking() {
             if(!currentFrequency) return;
             isTalking = true;
+            setMicrophoneMute(false); // فتح المايك عند الضغط لبث الصوت
             const pttBtn = document.getElementById('ptt-btn');
             if(pttBtn) pttBtn.classList.add('active');
         }
@@ -785,6 +858,7 @@
         function stopTalking() {
             if(!currentFrequency) return;
             isTalking = false;
+            setMicrophoneMute(true); // كتم المايك بعد رفع الإيد
             const pttBtn = document.getElementById('ptt-btn');
             if(pttBtn) pttBtn.classList.remove('active');
         }
