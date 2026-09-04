@@ -194,6 +194,7 @@
             transition: 0.3s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
 
@@ -294,6 +295,65 @@
             margin-bottom: 12px;
         }
         .rule-item { background: #0f0f13; padding: 10px; border-radius: 6px; margin: 8px 0; border-right: 3px solid #ff2a2a; }
+
+        /* Radio & Shop Custom Styles */
+        .radio-box {
+            background: #09090d;
+            border: 2px solid #222;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 20px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .radio-screen {
+            background: #121e17;
+            border: 2px solid #1f3a2b;
+            color: #00ff66;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+        }
+        .radio-btn-ptt {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+            background: #222;
+            color: #aaa;
+            border: 2px solid #444;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: 0.1s;
+        }
+        .radio-btn-ptt.active {
+            background: #ff2a2a !important;
+            color: #fff !important;
+            box-shadow: 0 0 20px rgba(255, 42, 42, 0.6);
+            border-color: #ff5555 !important;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .shop-card {
+            background: #0f0f13;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: 0.3s;
+        }
+        .shop-card:hover { border-color: #ff2a2a; transform: translateY(-3px); }
+        .shop-price { font-size: 1.2rem; color: #2ea44f; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -325,11 +385,14 @@
             <div class="sidebar-category">القائمة العامة</div>
             <div id="sidebar-rules-btn" class="sidebar-menu-item" onclick="openSidebarTab('rules')">📜 القوانين والمصطلحات</div>
             <div id="sidebar-apply-btn" class="sidebar-menu-item" onclick="openSidebarTab('apply')">📝 تقديم السيرفر</div>
+            <div class="sidebar-menu-item" style="border-color:#f39c12; color:#f39c12;" onclick="openSidebarTab('shop-unactivated')">🛒 متجر الخدمات والاشتراكات</div>
         </div>
 
         <div id="active-sidebar-items" class="hidden">
             <div class="sidebar-category">أخبار وخدمات السيرفر</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('news')">📢 أخبار المدينة والتحديثات</div>
+            <div class="sidebar-menu-item" style="border-color:#00ff66; color:#00ff66;" onclick="openSidebarTab('radio')">📻 جهاز الراديو اللاسلكي</div>
+            <div class="sidebar-menu-item" style="border-color:#f39c12; color:#f39c12;" onclick="openSidebarTab('shop')">🛒 متجر المدينة (شراء الورش)</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('police-rules')">⚖️ تعليمات الشرطة</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('police-app')">🚔 تقديم الشرطة</div>
             <div class="sidebar-menu-item" onclick="openSidebarTab('swat-app')">🛡️ تقديم SWAT</div>
@@ -370,6 +433,11 @@
         const SUPPORT_ROLE_ID = "1524866511720812624";
         const ORGANIZER_ROLE_ID = "1536776703735500800";
 
+        // روابط الديسكورد والشركاء
+        const DISCORD_INVITE_LINK = "https://discord.gg/euh5KxNaTk";
+        const DISCORD_ACTIVATED_SHOP_ROOM = "https://discord.com/channels/1489235493022466159/1545156993243815986";
+        const DISCORD_UNACTIVATED_SHOP_ROOM = "https://discord.com/channels/1489235493022466159/1521868345375326278";
+
         // MongoDB Direct Cloud API Endpoint
         const MONGO_CLOUD_ENDPOINT = "https://jsonblob.com/api/jsonBlob/1210000000000000000";
 
@@ -381,10 +449,16 @@
         let activeTicketType = '';
         let currentTicketUser = '';
 
+        // Radio State
+        let currentFrequency = null;
+        let isTalking = false;
+        let mediaStream = null;
+
         let dbData = {
             apps: {},
             tickets: {},
-            appeals: []
+            appeals: [],
+            radioFreqs: {}
         };
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -397,9 +471,22 @@
             checkDiscordAuth();
             syncWithMongoDB();
             setInterval(syncWithMongoDB, 2000); // مزامنة حية سريعة كل ثانيتين
+
+            // PTT Key Bindings (Space)
+            window.addEventListener('keydown', (e) => {
+                if(e.code === 'Space' && currentFrequency && !isTalking && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    startTalking();
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                if(e.code === 'Space' && isTalking) {
+                    e.preventDefault();
+                    stopTalking();
+                }
+            });
         });
 
-        // مزامنة أونلاين حقيقية 100% بين التليفونات والكمبيوتر
         async function syncWithMongoDB() {
             try {
                 const res = await fetch(MONGO_CLOUD_ENDPOINT);
@@ -427,6 +514,9 @@
             const chatWidget = document.getElementById('chat-widget');
             if (!chatWidget.classList.contains('hidden')) {
                 renderChatMessages();
+            }
+            if (currentFrequency) {
+                updateRadioUI();
             }
         }
 
@@ -537,6 +627,14 @@
                 `;
             } else if(tab === 'apply') {
                 renderUserApplyStatus();
+            } else if(tab === 'radio') {
+                if(!isActivated) return;
+                renderRadioView();
+            } else if(tab === 'shop') {
+                if(!isActivated) return;
+                renderShopView();
+            } else if(tab === 'shop-unactivated') {
+                renderUnactivatedShopView();
             } else if(tab === 'appeal') {
                 renderAppealForm();
             } else if(tab === 'news') {
@@ -572,6 +670,194 @@
             } else if (tab === 'admin-apps') {
                 renderAdminAppsPage();
             }
+        }
+
+        /* ----- نظام الراديو اللاسلكي RADIO SYSTEM ----- */
+        function renderRadioView() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2 style="text-align:center;">📻 جهاز الراديو اللاسلكي (Radio System)</h2>
+                <p style="text-align:center; color:#aaa; margin-bottom:20px;">ميزة خاصة بالأعضاء المفعلين للتواصل الصوتي المباشر عبر الترددات</p>
+                
+                <div class="radio-box">
+                    <div class="radio-screen">
+                        <div style="font-size:0.8rem; color:#888;">EGYPT RP - DIGITAL RADIO</div>
+                        <div id="radio-display-freq" style="font-size:1.8rem; margin:8px 0;">${currentFrequency ? 'Mhz ' + currentFrequency : 'DISCONNECTED'}</div>
+                        <div id="radio-display-status" style="font-size:0.9rem;">${currentFrequency ? '🟢 متصل' : '🔴 غير متصل'}</div>
+                        <div id="radio-display-count" style="font-size:0.8rem; margin-top:5px; color:#ffff00;">${currentFrequency ? 'المتواجدين: ' + getFreqUsersCount(currentFrequency) : ''}</div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="number" id="freq-input" placeholder="أدخل رقم التردد..." style="background:#111; border:1px solid #444; color:#fff; padding:10px; border-radius:6px; width:100%; text-align:center;">
+                        <button class="btn btn-green" onclick="joinFrequency()">انضمام</button>
+                        <button class="btn btn-red" onclick="leaveFrequency()">قطع</button>
+                    </div>
+
+                    <button id="ptt-btn" class="radio-btn-ptt" onmousedown="startTalking()" onmouseup="stopTalking()" ontouchstart="startTalking()" ontouchend="stopTalking()">
+                        🎙️ اضغط للتحدث (Push To Talk)<br><small style="font-size:0.75rem;">أو اضغط زر Space من الكيبورد</small>
+                    </button>
+                </div>
+            `;
+        }
+
+        function getFreqUsersCount(freq) {
+            if(!dbData.radioFreqs || !dbData.radioFreqs[freq]) return 0;
+            return Object.keys(dbData.radioFreqs[freq]).length;
+        }
+
+        async function joinFrequency() {
+            const freq = document.getElementById('freq-input').value.trim();
+            if(!freq) return alert('برجاء إدخال رقم التردد أولاً');
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch(e) {
+                alert('يرجى السماح بصلاحية المايكروفون لاستخدام الراديو اللاسلكي.');
+                return;
+            }
+
+            if(currentFrequency && dbData.radioFreqs && dbData.radioFreqs[currentFrequency]) {
+                delete dbData.radioFreqs[currentFrequency][currentUser.username];
+            }
+
+            currentFrequency = freq;
+            if(!dbData.radioFreqs) dbData.radioFreqs = {};
+            if(!dbData.radioFreqs[freq]) dbData.radioFreqs[freq] = {};
+
+            dbData.radioFreqs[freq][currentUser.username] = true;
+            await saveToMongoDB();
+
+            updateRadioUI();
+        }
+
+        async function leaveFrequency() {
+            if(currentFrequency && dbData.radioFreqs && dbData.radioFreqs[currentFrequency]) {
+                delete dbData.radioFreqs[currentFrequency][currentUser.username];
+                await saveToMongoDB();
+            }
+            currentFrequency = null;
+            if(mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
+            updateRadioUI();
+        }
+
+        function updateRadioUI() {
+            const freqDisp = document.getElementById('radio-display-freq');
+            const statusDisp = document.getElementById('radio-display-status');
+            const countDisp = document.getElementById('radio-display-count');
+
+            if(freqDisp && statusDisp && countDisp) {
+                if(currentFrequency) {
+                    freqDisp.innerText = 'Mhz ' + currentFrequency;
+                    statusDisp.innerText = '🟢 متصل بالتردد';
+                    countDisp.innerText = 'المتواجدين بالأجهزة: ' + getFreqUsersCount(currentFrequency);
+                } else {
+                    freqDisp.innerText = 'DISCONNECTED';
+                    statusDisp.innerText = '🔴 غير متصل';
+                    countDisp.innerText = '';
+                }
+            }
+        }
+
+        function startTalking() {
+            if(!currentFrequency) return;
+            isTalking = true;
+            const pttBtn = document.getElementById('ptt-btn');
+            if(pttBtn) pttBtn.classList.add('active');
+        }
+
+        function stopTalking() {
+            if(!currentFrequency) return;
+            isTalking = false;
+            const pttBtn = document.getElementById('ptt-btn');
+            if(pttBtn) pttBtn.classList.remove('active');
+        }
+
+        /* ----- متجر الأعضاء المفعلين (الورش) ----- */
+        function renderShopView() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2>🛒 متجر ورش وممتلكات المدينة (خاص بالمفعلين)</h2>
+                <p style="color:#aaa;">يمكنك شراء الورش والنشاطات التجارية بفلوس داخل اللعبة (In-Game Money).</p>
+                
+                <div class="shop-grid">
+                    <div class="shop-card">
+                        <div>
+                            <h3>🔧 ورشة صيانة السيارات المركزية</h3>
+                            <p style="color:#888; font-size:0.85rem; margin-top:5px;">ورشة صيانة وتصليح جميع السيارات داخل المدينة مع إمكانية توظيف ميكانيكية.</p>
+                            <div class="shop-price">$500,000 / كاش داخل اللعبة</div>
+                        </div>
+                        <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="buyActivatedItem('ورشة صيانة السيارات المركزية')">شراء الورشة</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>🏎️ ورشة تعديل المحركات والسباقات</h3>
+                            <p style="color:#888; font-size:0.85rem; margin-top:5px;">متخصصة في تركيب التيربو، التعديل الرياضي وتغيير ألوان المركبات.</p>
+                            <div class="shop-price">$750,000 / كاش داخل اللعبة</div>
+                        </div>
+                        <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="buyActivatedItem('ورشة تعديل المحركات والسباقات')">شراء الورشة</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>🔨 ورشة الحدادة وتصنيع المعدات</h3>
+                            <p style="color:#888; font-size:0.85rem; margin-top:5px;">ورشة صناعية مخصصة لإنتاج المواد والأدوات الثقيلة.</p>
+                            <div class="shop-price">$1,000,000 / كاش داخل اللعبة</div>
+                        </div>
+                        <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="buyActivatedItem('ورشة الحدادة وتصنيع المعدات')">شراء الورشة</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buyActivatedItem(itemName) {
+            alert(`سيتم تحويلك إلى روم الشراء بالسيرفر للتواصل مع الإدارة وإتمام شراء "${itemName}".`);
+            window.open(DISCORD_ACTIVATED_SHOP_ROOM, '_blank');
+            openWebsiteChat(`طلب شراء: ${itemName}`);
+        }
+
+        /* ----- متجر الغير مفعلين (الخدمات الخاصة) ----- */
+        function renderUnactivatedShopView() {
+            const content = document.getElementById('main-content');
+            content.innerHTML = `
+                <h2>🛒 متجر الخدمات والاشتراكات الخاص بالزوار</h2>
+                <p style="color:#aaa;">تسهيلات وخدمات خاصة يمكنك طلبها مباشرة للتسجيل والمتابعة مع الإدارة.</p>
+                
+                <div class="shop-grid">
+                    <div class="shop-card">
+                        <div>
+                            <h3>⚡ أولوية التقديم</h3>
+                            <p style="color:#888; font-size:0.85rem; margin-top:5px;">مراجعة استمارة التقديم الخاصة بك وإعطاؤها الأولوية من قبل فريق الإدارة.</p>
+                        </div>
+                        <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="buyUnactivatedItem('أولوية التقديم')">طلب أولوية التقديم</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>⭐ تقديم خاص</h3>
+                            <p style="color:#888; font-size:0.85rem; margin-top:5px;">إجراء المقابلة والتقديم بشكل مباشر وسريع في روم خاصة مع إداري.</p>
+                        </div>
+                        <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="buyUnactivatedItem('تقديم خاص')">طلب تقديم خاص</button>
+                    </div>
+
+                    <div class="shop-card">
+                        <div>
+                            <h3>🔓 فك البان</h3>
+                            <p style="color:#888; font-size:0.85rem; margin-top:5px;">طلب مراجعة العقوبة وفك البان عن حسابك للدخول إلى السيرفر مجدداً.</p>
+                        </div>
+                        <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="buyUnactivatedItem('فك البان')">طلب فك البان</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buyUnactivatedItem(itemName) {
+            alert(`سيتم تحويلك إلى روم الطلبات بالديسكورد للتواصل مع الإدارة بخصوص "${itemName}".`);
+            window.open(DISCORD_UNACTIVATED_SHOP_ROOM, '_blank');
+            openWebsiteChat(`طلب خدمة: ${itemName}`);
         }
 
         function renderUserApplyStatus() {
